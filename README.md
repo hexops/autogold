@@ -1,12 +1,14 @@
-# autogold - automated Go golden file testing [![Go Reference](https://pkg.go.dev/badge/github.com/hexops/autogold.svg)](https://pkg.go.dev/github.com/hexops/autogold) <a href="https://hexops.com"><img align="right" alt="Hexops logo" src="https://raw.githubusercontent.com/hexops/media/master/readme.svg"></img></a>
+# autogold - automated Go golden file testing <a href="https://hexops.com"><img align="right" alt="Hexops logo" src="https://raw.githubusercontent.com/hexops/media/master/readme.svg"></img></a>
 
-Instead of writing your desired output as a large structure / string inline in your test, simply write:
+<a href="https://pkg.go.dev/badge/github.com/hexops/autogold"><img src="https://pkg.go.dev/badge/badge/github.com/hexops/autogold.svg" alt="Go Reference" align="right"></a>
+
+Instead of writing your desired test output as a large Go structure / string in your code, simply write:
 
 ```Go
 autogold.Equal(t, got)
 ```
 
-The test output (nested struct, string, etc.) will be formatted using [google/go-cmp](https://github.com/google/go-cmp). If the `testdata/<test name>.golden` snapshot file is different, the test will fail with a [nice multi-line diff](https://github.com/hexops/gotextdiff) and `go test -update` will update the file if you like the changes.
+The test output (nested Go struct, string, etc.) will be formatted using [google/go-cmp](https://github.com/google/go-cmp). If the `testdata/<test name>.golden` snapshot file is different, the test will fail with a [nice multi-line diff](https://github.com/hexops/gotextdiff) and `go test -update` will update the file if you like the changes.
 
 ## Example usage
 
