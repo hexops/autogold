@@ -70,7 +70,7 @@ func mkTempDir() error {
 // If the go test -update flag is specified, the .golden files will be updated or created automatically.
 //
 // Custom equality operators can be used if needed by passing options. See https://pkg.go.dev/github.com/google/go-cmp/cmp
-func Equal(t *testing.T, got interface{}, opts ...Option) error {
+func Equal(t *testing.T, got interface{}, opts ...Option) {
 	var (
 		cmpOpts  []cmp.Option
 		dir      = "testdata"
@@ -143,7 +143,6 @@ func Equal(t *testing.T, got interface{}, opts ...Option) error {
 			t.Fatal(fmt.Errorf("mismatch (-want +got):\n%s", diff))
 		}
 	}
-	return nil
 }
 
 // Option configures specific behavior for Equal.
