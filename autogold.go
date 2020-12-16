@@ -91,7 +91,7 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 
 	outFile := filepath.Join(dir, fileName+".golden")
 
-	if !shouldUpdateOnly() {
+	if !shouldUpdateOnly() && *update {
 		if err := mkTempDir(); err != nil {
 			t.Fatal(err)
 		}
