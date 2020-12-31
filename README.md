@@ -35,8 +35,7 @@ Run `go test` and you'll see the test fails:
         --- want
         +++ got
         @@ -1 +1,2 @@
-        +{*example.Baz}.Name:"Jane"
-        +{*example.Baz}.Age:31
+        &example.Baz{Name: "Jane", Age: 31}
 ```
 
 We see a diff showing what our test produced and what we expected (nothing, because `testdata/TestFoobar.golden` does not exist.)
