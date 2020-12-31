@@ -1,9 +1,5 @@
 package autogold
 
-import (
-	"github.com/google/go-cmp/cmp"
-)
-
 // Option configures specific behavior for Equal.
 type Option interface {
 	// isValidOption is an unexported field to ensure only valid options from this package can be
@@ -12,21 +8,16 @@ type Option interface {
 }
 
 type option struct {
-	name string
-	opts []cmp.Option
-	dir  string
+	name         string
+	exportedOnly bool
+	dir          string
 }
 
 func (o *option) isValidOption() {}
 
-// Unexported is an option that includes unexported fields in the output.
-func Unexported() Option {
-	return CmpOptions(cmp.AllowUnexported())
-}
-
-// CmpOptions specifies go-cmp options that should be used.
-func CmpOptions(opts ...cmp.Option) Option {
-	return &option{opts: opts}
+// ExportedOnly is an option that includes exported fields in the output only.
+func ExportedOnly() Option {
+	return &option{exportedOnly: true}
 }
 
 // Name specifies a name to use for the testdata/<name>.golden file instead of the default test name.

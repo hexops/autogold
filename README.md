@@ -8,7 +8,7 @@ Instead of writing your desired test output as a large Go structure / string in 
 autogold.Equal(t, got)
 ```
 
-The test output (nested Go struct, string, etc.) will be formatted using [google/go-cmp](https://github.com/google/go-cmp). If the `testdata/<test name>.golden` snapshot file is different, the test will fail with a [nice multi-line diff](https://github.com/hexops/gotextdiff) and `go test -update` will update the file if you like the changes.
+The test output (nested Go struct, string, etc.) will be formatted using [valast](https://github.com/hexops/valast). If the `testdata/<test name>.golden` snapshot file is different, the test will fail with a [nice multi-line diff](https://github.com/hexops/gotextdiff) and `go test -update` will update the file if you like the changes.
 
 ## Example usage
 
@@ -51,30 +51,26 @@ _Golden files make the most sense when you'd otherwise have to write a complex m
 
 ## Custom formatting
 
-[google/go-cmp](https://github.com/google/go-cmp) is used to produce a text description of the Go value you provide to `autogold.Equal`. If the default output is not suitable for your test, you have options:
+[valast](https://github.com/hexops/valast) is used to produce a text description of the Go value you provide to `autogold.Equal`. If the default output is not suitable for your test, you have options:
 
 ### Changing formatting for a specific sub-value
 
-If your type implements the [`fmt.GoStringer`](https://golang.org/pkg/fmt/#GoStringer) interface, it will be used to convert your type to a string.
+If the value you provide implements the [`fmt.GoStringer`](https://golang.org/pkg/fmt/#GoStringer) interface, it will be used to convert your type to a string.
 
-### Include unexported fields
+### Exclude exported fields
 
 ```Go
-autogold.Equal(t, got, autogold.Unexported())
+autogold.Equal(t, got, autogold.ExportedOnly())
 ```
 
 ### Use your own custom format (JSON, etc.)
 
 Simply pass a `string` value to `autogold.Equal`, doing the formatting yourself. It'll be written to the golden file as-is.
 
-### Provide custom go-cmp options
-
-You can provide [any go-cmp option](https://pkg.go.dev/github.com/google/go-cmp@v0.5.4/cmp#Option) which will affect formatting by providing the `autogold.CmpOptions(...)` option to `autogold.Equal`.
-
 ## Alternatives
 
-Before writing autogold, I considered the following alternatives but was left wanting a better API:
+The following are alternatives to autogold:
 
-- [github.com/xorcare/golden](https://pkg.go.dev/github.com/xorcare/golden): only works on `[]byte` inputs.
-- [github.com/sebdah/goldie](https://pkg.go.dev/github.com/sebdah/goldie/v2): doesn't have a minimal API, only works on `[]byte` inputs (but provides helpers for JSON, XML, etc.)
-- [github.com/bradleyjkemp/cupaloy](https://pkg.go.dev/github.com/bradleyjkemp/cupaloy/v2) less minimal API, works on any inputs but [uses inactive go-spew project](https://github.com/davecgh/go-spew/issues/128) to format Go structs.
+- [github.com/xorcare/golden](https://pkg.go.dev/github.com/xorcare/golden): works on `[]byte` inputs only.
+- [github.com/sebdah/goldie](https://pkg.go.dev/github.com/sebdah/goldie/v2): works on `[]byte` inputs only (but provides helpers for JSON, XML, etc.)
+- [github.com/bradleyjkemp/cupaloy](https://pkg.go.dev/github.com/bradleyjkemp/cupaloy/v2) works on `interface{}` inputs, but [uses inactive go-spew project](https://github.com/davecgh/go-spew/issues/128) to format Go structs.

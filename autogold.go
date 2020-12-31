@@ -23,8 +23,6 @@ var (
 //
 // If the `go test -update` flag is specified, the .golden files will be updated/created
 // automatically.
-//
-// Custom equality operators can be used if needed by passing options. See https://pkg.go.dev/github.com/google/go-cmp/cmp
 func Equal(t *testing.T, got interface{}, opts ...Option) {
 	dir := testdataDir(opts)
 	fileName := strings.Replace(testName(t, opts), "/", "__", -1)
