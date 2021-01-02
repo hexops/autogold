@@ -1,6 +1,6 @@
 module github.com/hexops/autogold
 
-go 1.16
+go 1.15
 
 require (
 	github.com/hexops/gotextdiff v1.0.3
