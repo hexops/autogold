@@ -28,7 +28,7 @@ var (
 // formatted as a Go literal.
 func Equal(t *testing.T, got interface{}, opts ...Option) {
 	dir := testdataDir(opts)
-	fileName := strings.Replace(testName(t, opts), "/", "__", -1)
+	fileName := testName(t, opts)
 	outFile := filepath.Join(dir, fileName+".golden")
 
 	if !shouldUpdateOnly() && *update {
