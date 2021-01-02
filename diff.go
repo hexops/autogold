@@ -14,19 +14,29 @@ func diff(got, want string, opts []Option) string {
 	return fmt.Sprint(gotextdiff.ToUnified("want", "got", string(want), edits))
 }
 
+// Raw denotes a raw string.
+type Raw string
+
 func stringify(v interface{}, opts []Option) string {
-	if v, ok := v.(string); ok {
-		return v
-	}
-	if v, ok := v.(fmt.GoStringer); ok {
-		return v.GoString()
-	}
-	var valastOpt *valast.Options
+	var allowRaw bool
+	valastOpt := &valast.Options{}
 	for _, opt := range opts {
 		opt := opt.(*option)
 		if opt.exportedOnly {
 			valastOpt.ExportedOnly = true
 		}
+		if opt.forPackageName != "" {
+			valastOpt.PackageName = opt.forPackageName
+		}
+		if opt.forPackagePath != "" {
+			valastOpt.PackagePath = opt.forPackagePath
+		}
+		if opt.allowRaw {
+			allowRaw = true
+		}
 	}
-	return valast.StringWithOptions(v, valastOpt) + "\n"
+	if v, ok := v.(Raw); ok && allowRaw {
+		return string(v)
+	}
+	return valast.StringWithOptions(v, valastOpt)
 }
