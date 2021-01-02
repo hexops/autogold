@@ -8,9 +8,10 @@ type Option interface {
 }
 
 type option struct {
-	name         string
-	exportedOnly bool
-	dir          string
+	name                           string
+	exportedOnly                   bool
+	dir                            string
+	forPackageName, forPackagePath string
 }
 
 func (o *option) isValidOption() {}
