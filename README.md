@@ -2,25 +2,21 @@
 
 <a href="https://pkg.go.dev/badge/github.com/hexops/autogold"><img src="https://pkg.go.dev/badge/badge/github.com/hexops/autogold.svg" alt="Go Reference" align="right"></a>
 
-autogold makes `go test -update` automatically update your Go tests. It can automatically create/update:
+autogold makes `go test -update` automatically update your Go tests (golden files and Go values in e.g. `foo_test.go`.)
 
-- [`testdata/.golden` file tests](#golden-file-testing)
-- [Inline snapshots / golden values](#inline-snapshots-golden-values) (including complex Go structs, etc.)
-- [Golden subtest values](#golden-subtest-values)
-
-## Golden file testing
+## Automatic golden files
 
 Write in a Go test:
 
 ```Go
 import "github.com/hexops/autogold"
 ...
-autogold.File(t, got)
+autogold.Equal(t, got)
 ```
 
-`go test -update` will automatically create/update a `testdata/<test name>.golden` file for you.
+`go test -update` will now create/update a `testdata/<test name>.golden` file for you automatically.
 
-## Inline snapshots / golden values
+## Automatic inline test updating
 
 Write in a Go test:
 
@@ -30,36 +26,44 @@ autogold.Inline(t, got, nil)
 
 `go test -update` will automatically update `nil` with the Go syntax for whatever value your test `got` (complex Go struct, slices, strings, etc.)
 
-## Golden subtest values
+## Diffs
 
-Use [table-driven Go subtests](https://blog.golang.org/subtests)? `autogold.Value` and `go test -update` will automatically find and replace the `nil` values here for you:
+Anytime your test produces a result that is unexpected, you'll get very nice diffs showing exactly what changed. It does this by [converting values at runtime directly to a formatted Go AST](https://github.com/hexops/valast), and using the same [diffing library the Go language server uses](https://github.com/hexops/gotextdiff):
+
+```
+
+```
+
+## Subtesting
+
+Use [table-driven Go subtests](https://blog.golang.org/subtests)? `autogold.Want` and `go test -update` will automatically find and replace the `nil` values for you:
 
 ```Go
 func TestTime(t *testing.T) {
-    testCases := []struct {
-        gmt  string
-        loc  string
-        test autogold.Test
-    }{
-        {"12:31", "Europe/Zuri", autogold.Value("Europe", nil)},
-        {"12:31", "America/New_York", autogold.Value("America", nil)},
-        {"08:08", "Australia/Sydney", autogold.Value("Australia", nil)},
-    }
-    for _, tc := range testCases {
-        t.Run(tc.test.Name(), func(t *testing.T) {
-            loc, err := time.LoadLocation(tc.loc)
-            if err != nil {
-                t.Fatal("could not load location")
-            }
-            gmt, _ := time.Parse("15:04", tc.gmt)
-            got := gmt.In(loc).Format("15:04")
-            tc.test.Check(t, got)
-        })
-    }
+	testCases := []struct {
+		gmt  string
+		loc  string
+		want autogold.Value
+	}{
+		{"12:31", "Europe/Zuri", autogold.Want("Europe", nil)},
+		{"12:31", "America/New_York", autogold.Want("America", nil)},
+		{"08:08", "Australia/Sydney", autogold.Want("Australia", nil)},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.want.Name(), func(t *testing.T) {
+			loc, err := time.LoadLocation(tc.loc)
+			if err != nil {
+				t.Fatal("could not load location")
+			}
+			gmt, _ := time.Parse("15:04", tc.gmt)
+			got := gmt.In(loc).Format("15:04")
+			tc.want.Equal(t, got)
+		})
+	}
 }
 ```
 
-It does this by looking for the relevant`autogold.Value("<subtest name>", ...)` call below the named test, and replacing the `nil` parameter.
+It works by finding the relevant `autogold.Want("<unique name>", ...)` call below the named `TestTime` function, and then replacing the `nil` parameter (or anything that was there.)
 
 ## What are golden files, when should they be used?
 
@@ -71,10 +75,11 @@ In most cases, you should prefer inline snapshots, subtest golden values, or tra
 
 ## Custom formatting
 
-[valast](https://github.com/hexops/valast) is used to produce Go syntax at runtime for the Go value you provide to `autogold`. If the default output is not suitable for your test, you have options:
+[valast](https://github.com/hexops/valast) is used to produce Go syntax at runtime for the Go value you provide. If the default output is not to your liking, you have options:
 
-- **Use your own formatting (JSON, etc.)**: Make your `got` value of type `autogold.Raw("foobar")`, and it will be used as-is.
-- **Exclude unexported fields**: `autogold.Foo(t, got, autogold.ExportedOnly())`
+- **Pass a string to autogold**: It will be formatted as a Go string for you in the resulting `.golden` file / in Go tests.
+- **Use your own formatting (JSON, etc.)**: Make your `got` value of type `autogold.Raw("foobar")`, and it will be used as-is for `.golden` files (not allowed with inline tests.)
+- **Exclude unexported fields**: `autogold.Equal(t, got, autogold.ExportedOnly())`
 
 ## Alternatives comparison
 
