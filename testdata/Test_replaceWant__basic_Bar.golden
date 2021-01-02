@@ -1,0 +1,12 @@
+package foo
+
+import (
+	"testing"
+
+	"github.com/hexops/autogold"
+)
+
+func TestFoo(t *testing.T) {
+	autogold.Want("Bar", "replacement")
+}
+

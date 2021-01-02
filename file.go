@@ -67,11 +67,11 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 		if *update || shouldUpdateOnly() {
 			outDir := filepath.Dir(outFile)
 			if _, err := os.Stat(outDir); os.IsNotExist(err) {
-				if err := os.MkdirAll(outDir, 0700); err != nil {
+				if err := os.MkdirAll(outDir, 0o700); err != nil {
 					t.Fatal(err)
 				}
 			}
-			if err := ioutil.WriteFile(outFile, []byte(gotString), 0666); err != nil {
+			if err := ioutil.WriteFile(outFile, []byte(gotString), 0o666); err != nil {
 				t.Fatal(err)
 			}
 		}
