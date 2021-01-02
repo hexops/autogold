@@ -18,12 +18,12 @@ var (
 	cleanDir     string
 )
 
-// File checks if got is equal to the saved `testdata/<test name>.golden` test file. If it is not,
+// Equal checks if got is equal to the saved `testdata/<test name>.golden` test file. If it is not,
 // t.Fatal is called with a multi-line diff comparison.
 //
 // If the `go test -update` flag is specified, the .golden files will be updated/created
 // automatically.
-func File(t *testing.T, got interface{}, opts ...Option) {
+func Equal(t *testing.T, got interface{}, opts ...Option) {
 	dir := testdataDir(opts)
 	fileName := strings.Replace(testName(t, opts), "/", "__", -1)
 	outFile := filepath.Join(dir, fileName+".golden")
@@ -61,7 +61,7 @@ func File(t *testing.T, got interface{}, opts ...Option) {
 		t.Fatal(err)
 	}
 
-	gotString := stringify(got, opts)
+	gotString := stringify(got, opts) + "\n"
 	diff := diff(gotString, string(want), opts)
 	if diff != "" {
 		if *update || shouldUpdateOnly() {
