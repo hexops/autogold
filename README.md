@@ -21,18 +21,16 @@ autogold.Equal(t, got)
 Write in a Go test:
 
 ```Go
-autogold.Inline(t, got, nil)
+want := autogold.Want("my_test", nil)
+want.Equal(t, got)
 ```
 
-`go test -update` will automatically update `nil` with the Go syntax for whatever value your test `got` (complex Go struct, slices, strings, etc.)
+`go test -update` will automatically update the `autogold.Want("my_test", ...)` call with the Go syntax for whatever value your test `got` (complex Go struct, slices, strings, etc.)
 
 ## Diffs
 
 Anytime your test produces a result that is unexpected, you'll get very nice diffs showing exactly what changed. It does this by [converting values at runtime directly to a formatted Go AST](https://github.com/hexops/valast), and using the same [diffing library the Go language server uses](https://github.com/hexops/gotextdiff):
 
-```
-
-```
 
 ## Subtesting
 
