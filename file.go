@@ -23,6 +23,9 @@ var (
 //
 // If the `go test -update` flag is specified, the .golden files will be updated/created
 // automatically.
+//
+// If the input value is of type Raw, its contents will be directly used instead of the value being
+// formatted as a Go literal.
 func Equal(t *testing.T, got interface{}, opts ...Option) {
 	dir := testdataDir(opts)
 	fileName := strings.Replace(testName(t, opts), "/", "__", -1)
@@ -61,6 +64,7 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 		t.Fatal(err)
 	}
 
+	opts = append(opts, &option{allowRaw: true})
 	gotString := stringify(got, opts) + "\n"
 	diff := diff(gotString, string(want), opts)
 	if diff != "" {

@@ -76,7 +76,7 @@ C error
 			if tst.err != "" && tst.err != fmt.Sprint(err) || tst.err == "" && err != nil {
 				t.Fatal("\ngot:\n", err, "\nwant:\n", tst.err)
 			}
-			Equal(t, string(got))
+			Equal(t, Raw(got))
 		})
 	}
 }

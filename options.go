@@ -8,10 +8,13 @@ type Option interface {
 }
 
 type option struct {
-	name                           string
-	exportedOnly                   bool
-	dir                            string
+	name         string
+	exportedOnly bool
+	dir          string
+
+	// internal options.
 	forPackageName, forPackagePath string
+	allowRaw                       bool
 }
 
 func (o *option) isValidOption() {}
