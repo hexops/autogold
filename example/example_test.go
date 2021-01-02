@@ -8,5 +8,5 @@ import (
 
 func TestFoo(t *testing.T) {
 	got := Bar()
-	autogold.Equal(t, got)
+	autogold.File(t, got)
 }
