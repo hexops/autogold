@@ -89,6 +89,12 @@ In most cases, you should prefer inline snapshots, subtest golden values, or tra
 - **Use your own formatting (JSON, etc.)**: Make your `got` value of type `autogold.Raw("foobar")`, and it will be used as-is for `.golden` files (not allowed with inline tests.)
 - **Exclude unexported fields**: `autogold.Equal(t, got, autogold.ExportedOnly())`
 
+## Backwards compatibility
+
+- As is the case with `gofmt`, different Go versions may produce different formattings (although rare.)
+- Minor versions of autogold (e.g. `v1.0`, `v1.1`) may alter the _formatting_ of `.golden` files, although we will be mindful of such changes.
+- Major versions of autogold (e.g. `v1`, `v2`) will be used for any major changes in output that would be _difficult to review_ (we expect this will be rare in practice.)
+
 ## Alternatives comparison
 
 The following are alternatives to autogold, making note of the differences we found that let us to create autogold:
