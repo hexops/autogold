@@ -33,6 +33,14 @@ want.Equal(t, got)
 
 Anytime your test produces a result that is unexpected, you'll get very nice diffs showing exactly what changed. It does this by [converting values at runtime directly to a formatted Go AST](https://github.com/hexops/valast), and using the same [diffing library the Go language server uses](https://github.com/hexops/gotextdiff):
 
+```
+--- FAIL: TestEqual (0.08s)
+    autogold.go:91: mismatch (-want +got):
+        --- want
+        +++ got
+        @@ -1 +1 @@
+        +&example.Baz{Name: "Jane", Age: 31}
+```
 
 ## Subtesting
 
