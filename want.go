@@ -100,6 +100,14 @@ func Want(name string, want interface{}) Value {
 
 			// Update the test file if so desired.
 			if *update || shouldUpdateOnly() {
+				// Acquire a file-level lock to prevent concurrent mutations to the _test.go file
+				// by parallel tests (whether in-process, or not.)
+				unlock, err := acquirePathLock(testPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer unlock()
+
 				// Replace the autogold.Want(...) call's `want` parameter with the expression for the
 				// value we got.
 				newTestFile, err := replaceWant(testPath, testName, name, gotString)

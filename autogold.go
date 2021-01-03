@@ -1,13 +1,17 @@
 package autogold
 
 import (
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+
+	"github.com/nightlyone/lockfile"
 )
 
 var (
@@ -31,10 +35,32 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 	fileName := testName(t, opts)
 	outFile := filepath.Join(dir, fileName+".golden")
 
+	// grabLock will acquire a directory-level lock to prevent concurrent mutations to the .golden
+	// files by parallel tests (whether in-process, or not.)
+	var goldenFilesUnlock func() error
+	grabLock := func() {
+		if goldenFilesUnlock != nil {
+			return
+		}
+		var err error
+		goldenFilesUnlock, err = acquirePathLock(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	unlock := func() {
+		if goldenFilesUnlock != nil {
+			goldenFilesUnlock()
+			goldenFilesUnlock = nil
+		}
+	}
+	defer unlock()
+
 	if !shouldUpdateOnly() && *update {
 		if err := mkTempDir(); err != nil {
 			t.Fatal(err)
 		}
+		grabLock()
 		_, ok := cleaned[dir]
 		if !ok {
 			// Move all .golden files in the directory into the temp dir.
@@ -57,6 +83,7 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 		if err != nil && !os.IsNotExist(err) {
 			t.Fatal(err)
 		}
+		unlock() // don't hold the lock while we perform IO, diffing, etc. below.
 	}
 
 	want, err := ioutil.ReadFile(outFile)
@@ -66,17 +93,17 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 
 	opts = append(opts, &option{allowRaw: true, trailingNewline: true})
 	gotString := stringify(got, opts)
+	diff := diff(gotString, string(want), opts)
 
 	_, isRaw := got.(Raw)
 	isEmptyFile := isRaw && gotString == ""
 	if isEmptyFile && (*update || shouldUpdateOnly()) {
-		fmt.Println("remove")
+		grabLock()
 		os.Remove(outFile)
 	}
-
-	diff := diff(gotString, string(want), opts)
 	if diff != "" {
 		if *update || shouldUpdateOnly() {
+			grabLock()
 			outDir := filepath.Dir(outFile)
 			if _, err := os.Stat(outDir); os.IsNotExist(err) {
 				if err := os.MkdirAll(outDir, 0o700); err != nil {
@@ -91,6 +118,57 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 			t.Fatal(fmt.Errorf("mismatch (-want +got):\n%s", diff))
 		}
 	}
+}
+
+var (
+	pathLocksMu sync.Mutex
+	pathLocks   = map[string]*pathLock{}
+)
+
+type pathLock struct {
+	ownership sync.Mutex
+	lockfile  lockfile.Lockfile
+}
+
+// acquirePathLock acquires a PID-based lockfile for the given path, which will be made into an
+// absolute path.
+//
+// The returned function unlocks the lock.
+func acquirePathLock(path string) (func() error, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	sha := fmt.Sprintf("%x", sha256.Sum256([]byte(path)))
+	pathHash := string(sha[:7])
+	lockPath := filepath.Join(os.TempDir(), "autogold."+pathHash)
+
+	pathLocksMu.Lock()
+	lock, inProcessAlready := pathLocks[lockPath]
+	if !inProcessAlready {
+		lockfile, err := lockfile.New(lockPath)
+		if err != nil {
+			pathLocksMu.Unlock()
+			return nil, err
+		}
+		lock = &pathLock{lockfile: lockfile}
+		pathLocks[lockPath] = lock
+	}
+	pathLocksMu.Unlock()
+
+	// Must not have multiple goroutines own the lockfile.
+	lock.ownership.Lock()
+	if err := lock.lockfile.TryLock(); err != nil {
+		lock.ownership.Unlock()
+		return nil, err
+	}
+	return func() error {
+		defer lock.ownership.Unlock()
+		if err := lock.lockfile.Unlock(); err != nil {
+			return fmt.Errorf("failed to unlock %q, reason: %v (you may need to delete the file)", lock.lockfile, err)
+		}
+		return nil
+	}, nil
 }
 
 func shouldUpdateOnly() bool {
