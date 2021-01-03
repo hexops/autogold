@@ -106,7 +106,11 @@ func Want(name string, want interface{}) Value {
 				if err != nil {
 					t.Fatal(err)
 				}
-				defer unlock()
+				defer func() {
+					if err := unlock(); err != nil {
+						t.Fatal(err)
+					}
+				}()
 
 				// Replace the autogold.Want(...) call's `want` parameter with the expression for the
 				// value we got.

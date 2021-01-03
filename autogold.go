@@ -50,7 +50,9 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 	}
 	unlock := func() {
 		if goldenFilesUnlock != nil {
-			goldenFilesUnlock()
+			if err := goldenFilesUnlock(); err != nil {
+				t.Fatal(err)
+			}
 			goldenFilesUnlock = nil
 		}
 	}
