@@ -1,6 +1,8 @@
 # autogold - automatically update your Go tests <a href="https://hexops.com"><img align="right" alt="Hexops logo" src="https://raw.githubusercontent.com/hexops/media/master/readme.svg"></img></a>
 
-<a href="https://pkg.go.dev/badge/github.com/hexops/autogold"><img src="https://pkg.go.dev/badge/badge/github.com/hexops/autogold.svg" alt="Go Reference" align="right"></a>
+<a href="https://pkg.go.dev/github.com/hexops/autogold"><img src="https://pkg.go.dev/badge/badge/github.com/hexops/autogold.svg" alt="Go Reference" align="right"></a>
+  
+[![Go CI](https://github.com/hexops/autogold/workflows/Go%20CI/badge.svg)](https://github.com/hexops/autogold/actions) [![codecov](https://codecov.io/gh/hexops/autogold/branch/main/graph/badge.svg)](https://codecov.io/gh/hexops/autogold) [![Go Report Card](https://goreportcard.com/badge/github.com/hexops/autogold)](https://goreportcard.com/report/github.com/hexops/autogold)
 
 autogold makes `go test -update` automatically update your Go tests (golden files and Go values in e.g. `foo_test.go`.)
 
