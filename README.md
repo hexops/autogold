@@ -4,7 +4,11 @@
   
 [![Go CI](https://github.com/hexops/autogold/workflows/Go%20CI/badge.svg)](https://github.com/hexops/autogold/actions) [![codecov](https://codecov.io/gh/hexops/autogold/branch/main/graph/badge.svg)](https://codecov.io/gh/hexops/autogold) [![Go Report Card](https://goreportcard.com/badge/github.com/hexops/autogold)](https://goreportcard.com/report/github.com/hexops/autogold)
 
-autogold makes `go test -update` automatically update your Go tests (golden files and Go values in e.g. `foo_test.go`.)
+autogold makes `go test -update` automatically update your Go tests (golden files and Go values in e.g. `foo_test.go`.
+
+~5m introduction available on YouTube:
+
+[_"It's 2021: you shouldn't have to update Go tests manually"_](https://youtu.be/mvkIruEGRr4)
 
 ## Automatic golden files
 
