@@ -18,8 +18,10 @@ func diff(got, want string, opts []Option) string {
 type Raw string
 
 func stringify(v interface{}, opts []Option) string {
-	var allowRaw bool
-	valastOpt := &valast.Options{}
+	var (
+		allowRaw, trailingNewline bool
+		valastOpt                 = &valast.Options{}
+	)
 	for _, opt := range opts {
 		opt := opt.(*option)
 		if opt.exportedOnly {
@@ -34,9 +36,16 @@ func stringify(v interface{}, opts []Option) string {
 		if opt.allowRaw {
 			allowRaw = true
 		}
+		if opt.trailingNewline {
+			trailingNewline = true
+		}
 	}
 	if v, ok := v.(Raw); ok && allowRaw {
 		return string(v)
 	}
-	return valast.StringWithOptions(v, valastOpt)
+	s := valast.StringWithOptions(v, valastOpt)
+	if trailingNewline {
+		return s + "\n"
+	}
+	return s
 }

@@ -15,6 +15,7 @@ type option struct {
 	// internal options.
 	forPackageName, forPackagePath string
 	allowRaw                       bool
+	trailingNewline                bool
 }
 
 func (o *option) isValidOption() {}

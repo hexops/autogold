@@ -64,8 +64,16 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 		t.Fatal(err)
 	}
 
-	opts = append(opts, &option{allowRaw: true})
-	gotString := stringify(got, opts) + "\n"
+	opts = append(opts, &option{allowRaw: true, trailingNewline: true})
+	gotString := stringify(got, opts)
+
+	_, isRaw := got.(Raw)
+	isEmptyFile := isRaw && gotString == ""
+	if isEmptyFile && (*update || shouldUpdateOnly()) {
+		fmt.Println("remove")
+		os.Remove(outFile)
+	}
+
 	diff := diff(gotString, string(want), opts)
 	if diff != "" {
 		if *update || shouldUpdateOnly() {

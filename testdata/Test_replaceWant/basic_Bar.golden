@@ -9,4 +9,3 @@ import (
 func TestFoo(t *testing.T) {
 	autogold.Want("Bar", "replacement")
 }
-
