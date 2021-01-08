@@ -225,7 +225,6 @@ func replaceWant(testFilePath, testName, valueName, replacement string) ([]byte,
 func findWantCallExpr(fset *token.FileSet, f *ast.File, testName, valueName string) (*ast.CallExpr, error) {
 	var (
 		err             error
-		foundTestFunc   bool
 		foundCallExpr   *ast.CallExpr
 		foundValueNames []string
 	)
@@ -234,18 +233,6 @@ func findWantCallExpr(fset *token.FileSet, f *ast.File, testName, valueName stri
 			return false
 		}
 		node := cursor.Node()
-		if !foundTestFunc {
-			if _, ok := node.(*ast.File); ok {
-				return true
-			}
-			if f, ok := node.(*ast.FuncDecl); ok {
-				if f.Name.Name == testName {
-					foundTestFunc = true
-				}
-				return true
-			}
-			return false
-		}
 		if foundCallExpr != nil {
 			return false
 		}
@@ -284,9 +271,6 @@ func findWantCallExpr(fset *token.FileSet, f *ast.File, testName, valueName stri
 	f = astutil.Apply(f, pre, nil).(*ast.File)
 	if err != nil {
 		return nil, err
-	}
-	if !foundTestFunc {
-		return nil, fmt.Errorf("%s: could not find test function: %s", fset.File(f.Pos()).Name(), testName)
 	}
 	if foundCallExpr == nil {
 		if len(foundValueNames) > 0 {

@@ -60,7 +60,7 @@ C error
 			testName:    "TestWrongName",
 			valueName:   "WrongTestName",
 			replacement: `"replacement"`,
-			err:         `testdata/replace_want/complex: could not find test function: TestWrongName`,
+			err:         `testdata/replace_want/complex: could not find autogold.Want("WrongTestName", ...) function call (did find "Europe", "America", …)`,
 		},
 		{
 			file:        "missing",
@@ -68,6 +68,12 @@ C error
 			valueName:   "Missing",
 			replacement: `"replacement"`,
 			err:         `testdata/replace_want/missing: could not find autogold.Want("Missing", ...) function call`,
+		},
+		{
+			file:        "issue7",
+			testName:    "TestNewUserStartTestSuite",
+			valueName:   "reg",
+			replacement: `"replacement"`,
 		},
 	}
 	for _, tst := range tests {
