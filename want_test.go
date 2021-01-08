@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func Test_replaceWant(t *testing.T) {
@@ -78,5 +79,49 @@ C error
 			}
 			Equal(t, Raw(got))
 		})
+	}
+}
+
+func Test_getPackageNameAndPath(t *testing.T) {
+	pkgName, pkgPath, err := getPackageNameAndPath(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "autogold"; pkgName != want {
+		t.Fatal("\ngot:\n", pkgName, "\nwant:\n", want)
+	}
+	if want := "github.com/hexops/autogold"; pkgPath != want {
+		t.Fatal("\ngot:\n", pkgPath, "\nwant:\n", want)
+	}
+}
+
+func Test_getPackageNameAndPath_subdir(t *testing.T) {
+	pkgName, pkgPath, err := getPackageNameAndPath("./internal/test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "test"; pkgName != want {
+		t.Fatal("\ngot:\n", pkgName, "\nwant:\n", want)
+	}
+	if want := "github.com/hexops/autogold/internal/test"; pkgPath != want {
+		t.Fatal("\ngot:\n", pkgPath, "\nwant:\n", want)
+	}
+}
+
+func Benchmark_getPackageNameAndPath_cached(b *testing.B) {
+	// Wipe the cache, as it was populated by other tests.
+	getPackageNameAndPathCacheMu.Lock()
+	getPackageNameAndPathCache = map[string][2]string{}
+	getPackageNameAndPathCacheMu.Unlock()
+
+	start := time.Now()
+	for n := 0; n < b.N; n++ {
+		_, _, err := getPackageNameAndPath("./autogold/internal/test")
+		if err != nil {
+			b.Fatal(err)
+		}
+		if n == 0 {
+			b.Log("first lookup", time.Since(start))
+		}
 	}
 }

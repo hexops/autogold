@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"golang.org/x/tools/go/ast/astutil"
@@ -35,6 +36,31 @@ type value struct {
 func (v value) Name() string { return v.name }
 func (v value) Equal(t *testing.T, got interface{}, opts ...Option) {
 	v.equal(t, got, opts...)
+}
+
+var (
+	getPackageNameAndPathCacheMu sync.RWMutex
+	getPackageNameAndPathCache   = map[string][2]string{}
+)
+
+func getPackageNameAndPath(dir string) (name, path string, err error) {
+	// If it is cached, fetch it from the cache. This prevents us from doing a semi-costly package
+	// load for every test that runs, instead requiring we only do it once per _test.go directory.
+	getPackageNameAndPathCacheMu.RLock()
+	if v, cached := getPackageNameAndPathCache[dir]; cached {
+		getPackageNameAndPathCacheMu.RUnlock()
+		return v[0], v[1], nil
+	}
+	getPackageNameAndPathCacheMu.RUnlock()
+
+	pkgs, err := packages.Load(&packages.Config{Mode: packages.NeedName}, dir)
+	if err != nil {
+		return "", "", err
+	}
+	getPackageNameAndPathCacheMu.Lock()
+	getPackageNameAndPathCache[dir] = [2]string{pkgs[0].Name, pkgs[0].PkgPath}
+	getPackageNameAndPathCacheMu.Unlock()
+	return pkgs[0].Name, pkgs[0].PkgPath, nil
 }
 
 // Want returns a desired Value which can later be checked for equality against a gotten value.
@@ -81,13 +107,13 @@ func Want(name string, want interface{}) Value {
 
 			// Determine the package name and path of the test file, so we can unqualify types in
 			// that package.
-			pkgs, err := packages.Load(&packages.Config{Mode: packages.NeedName}, filepath.Dir(testPath))
+			pkgName, pkgPath, err := getPackageNameAndPath(filepath.Dir(testPath))
 			if err != nil {
 				t.Fatalf("loading package: %v", err)
 			}
 			opts = append(opts, &option{
-				forPackagePath: pkgs[0].PkgPath,
-				forPackageName: pkgs[0].Name,
+				forPackagePath: pkgPath,
+				forPackageName: pkgName,
 			})
 
 			// Check if the test failed or not by diffing the results.
