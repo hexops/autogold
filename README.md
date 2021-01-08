@@ -131,6 +131,7 @@ The following are alternatives to autogold, making note of the differences we fo
 * A new `-cleanup` flag has been added to remove unused golden files.
 * `-no-update-fail` has been replaced by `-fail-on-update`, making the default behavior of `-update` to continue running tests and silently updating golden file contents similar to OCaml expect tests (see #8 for why this is a good quality of life improvement)
 * `-fail-on-update` now uses `t.FailNow()` instead of `t.Fatal`
+* `autogold.Want` may now be called anywhere in a test file, not just inside a `TestFoo` function.
 
 #### v1.3.1
 
