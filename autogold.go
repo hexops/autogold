@@ -35,6 +35,11 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 	fileName := testName(t, opts)
 	outFile := filepath.Join(dir, fileName+".golden")
 
+	// At this point dir may be "testdata/" while outFile may be "testdata/TestFoo/subTest.golden".
+	// Reconcile this situation so we can rely on dir for e.g. removing unused .golden files in it,
+	// locking it (instead of the entire "testdata/" directory), etc.
+	dir = filepath.Dir(outFile)
+
 	// grabLock will acquire a directory-level lock to prevent concurrent mutations to the .golden
 	// files by parallel tests (whether in-process, or not.)
 	var goldenFilesUnlock func() error
@@ -106,9 +111,8 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 	if diff != "" {
 		if *update || shouldUpdateOnly() {
 			grabLock()
-			outDir := filepath.Dir(outFile)
-			if _, err := os.Stat(outDir); os.IsNotExist(err) {
-				if err := os.MkdirAll(outDir, 0o700); err != nil {
+			if _, err := os.Stat(dir); os.IsNotExist(err) {
+				if err := os.MkdirAll(dir, 0o700); err != nil {
 					t.Fatal(err)
 				}
 			}
