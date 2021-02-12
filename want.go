@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/packages"
@@ -75,6 +76,28 @@ func Want(name string, want interface{}) Value {
 	return value{
 		name: name,
 		equal: func(t *testing.T, got interface{}, opts ...Option) {
+			var (
+				profGetPackageNameAndPath time.Duration
+				profStringifyWant         time.Duration
+				profStringifyGot          time.Duration
+				profDiff                  time.Duration
+				profAcquirePathLock       time.Duration
+				profReplaceWant           time.Duration
+			)
+			writeProfile := func() {
+				prof, _ := strconv.ParseBool(os.Getenv("AUTOGOLD_PROFILE"))
+				if !prof {
+					return
+				}
+				fmt.Println("autogold: profile:")
+				fmt.Println("  getPackageNameAndPath:", profGetPackageNameAndPath)
+				fmt.Println("  stringify (want):     ", profStringifyWant)
+				fmt.Println("  stringify (got):      ", profStringifyGot)
+				fmt.Println("  diffing   (got):      ", profDiff)
+				fmt.Println("  acquire path lock:    ", profAcquirePathLock)
+				fmt.Println("  rewrite autogold.Want:", profReplaceWant)
+			}
+
 			// Identify the root test name ("TestFoo" in "TestFoo/bar")
 			testName := t.Name()
 			if strings.Contains(testName, "/") {
@@ -98,17 +121,22 @@ func Want(name string, want interface{}) Value {
 			}
 			pwd, err := os.Getwd()
 			if err != nil {
+				writeProfile()
 				t.Fatal(err)
 			}
 			testPath, err := filepath.Rel(pwd, file)
 			if err != nil {
+				writeProfile()
 				t.Fatal(err)
 			}
 
 			// Determine the package name and path of the test file, so we can unqualify types in
 			// that package.
+			start := time.Now()
 			pkgName, pkgPath, err := getPackageNameAndPath(filepath.Dir(testPath))
+			profGetPackageNameAndPath = time.Since(start)
 			if err != nil {
+				writeProfile()
 				t.Fatalf("loading package: %v", err)
 			}
 			opts = append(opts, &option{
@@ -117,10 +145,17 @@ func Want(name string, want interface{}) Value {
 			})
 
 			// Check if the test failed or not by diffing the results.
+			start = time.Now()
 			wantString := stringify(want, opts)
+			profStringifyWant = time.Since(start)
+			start = time.Now()
 			gotString := stringify(got, opts)
+			profStringifyGot = time.Since(start)
+			start = time.Now()
 			diff := diff(gotString, wantString, opts)
+			profDiff = time.Since(start)
 			if diff == "" {
+				writeProfile()
 				return // test passed
 			}
 
@@ -128,8 +163,11 @@ func Want(name string, want interface{}) Value {
 			if *update || shouldUpdateOnly() {
 				// Acquire a file-level lock to prevent concurrent mutations to the _test.go file
 				// by parallel tests (whether in-process, or not.)
+				start = time.Now()
 				unlock, err := acquirePathLock(testPath)
+				profAcquirePathLock = time.Since(start)
 				if err != nil {
+					writeProfile()
 					t.Fatal(err)
 				}
 				defer func() {
@@ -140,19 +178,25 @@ func Want(name string, want interface{}) Value {
 
 				// Replace the autogold.Want(...) call's `want` parameter with the expression for the
 				// value we got.
+				start = time.Now()
 				newTestFile, err := replaceWant(testPath, testName, name, gotString)
+				profReplaceWant = time.Since(start)
 				if err != nil {
+					writeProfile()
 					t.Fatal(fmt.Errorf("autogold: %v", err))
 				}
 				info, err := os.Stat(testPath)
 				if err != nil {
+					writeProfile()
 					t.Fatal(err)
 				}
 				if err := ioutil.WriteFile(testPath, []byte(newTestFile), info.Mode()); err != nil {
+					writeProfile()
 					t.Fatal(err)
 				}
 			}
 			if !*noUpdateFail {
+				writeProfile()
 				t.Fatal(fmt.Errorf("mismatch (-want +got):\n%s", diff))
 			}
 		},
