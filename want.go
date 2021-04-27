@@ -36,6 +36,7 @@ type value struct {
 
 func (v value) Name() string { return v.name }
 func (v value) Equal(t *testing.T, got interface{}, opts ...Option) {
+	t.Helper()
 	v.equal(t, got, opts...)
 }
 
@@ -76,6 +77,7 @@ func Want(name string, want interface{}) Value {
 	return value{
 		name: name,
 		equal: func(t *testing.T, got interface{}, opts ...Option) {
+			t.Hepler()
 			var (
 				profGetPackageNameAndPath time.Duration
 				profStringifyWant         time.Duration
