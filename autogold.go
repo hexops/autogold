@@ -11,6 +11,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/fatih/color"
 	"github.com/nightlyone/lockfile"
 )
 
@@ -21,6 +22,10 @@ var (
 	cleaned      = map[string]struct{}{}
 	cleanDir     string
 )
+
+func init() {
+	color.NoColor = false
+}
 
 // Equal checks if got is equal to the saved `testdata/<test name>.golden` test file. If it is not,
 // t.Fatal is called with a multi-line diff comparison.
@@ -121,9 +126,27 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 			}
 		}
 		if !*noUpdateFail {
-			t.Fatal(fmt.Errorf("mismatch (-want +got):\n%s", diff))
+			t.Fatal(fmt.Errorf("mismatch (-want +got):\n%s", colorDiff(diff)))
 		}
 	}
+}
+
+func colorDiff(diff string) string {
+	s := []string{}
+
+	for _, line := range strings.Split(diff, "\n") {
+		if strings.HasPrefix(line, "-") {
+			s = append(s, color.RedString(line[1:]))
+		} else if strings.HasPrefix(line, "+") {
+			s = append(s, color.GreenString(line[1:]))
+		} else if strings.HasPrefix(line, " ") {
+			s = append(s, line[1:])
+		} else {
+			s = append(s, line)
+		}
+	}
+
+	return strings.Join(s, "\n")
 }
 
 var (
