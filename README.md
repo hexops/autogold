@@ -4,7 +4,7 @@
   
 [![Go CI](https://github.com/hexops/autogold/workflows/Go%20CI/badge.svg)](https://github.com/hexops/autogold/actions) [![codecov](https://codecov.io/gh/hexops/autogold/branch/main/graph/badge.svg)](https://codecov.io/gh/hexops/autogold) [![Go Report Card](https://goreportcard.com/badge/github.com/hexops/autogold)](https://goreportcard.com/report/github.com/hexops/autogold)
 
-autogold makes `go test -update` automatically update your Go tests (golden files and Go values in e.g. `foo_test.go`.
+autogold makes `go test -update` automatically update your Go tests (golden files and Go values in e.g. `foo_test.go`).
 
 ~5m introduction available on YouTube:
 
@@ -84,6 +84,14 @@ Golden files are used by the Go authors for testing [the standard library](https
 _Golden files make the most sense when you'd otherwise have to write a complex multi-line string or large Go structure inline in your test, making it hard to read._
 
 In most cases, you should prefer inline snapshots, subtest golden values, or traditional Go tests.
+
+## Command line syntax: put `-update` at the end
+
+`-update` should go at the end of your `go test` command, otherwise for some reason stdout will be considered a terminal and color will be turned on for libraries like [fatih/color](https://github.com/fatih/color). Example:
+
+```
+go test -count=1 -run TestSomething . -update
+```
 
 ## Custom formatting
 
