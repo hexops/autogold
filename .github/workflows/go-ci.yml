@@ -14,7 +14,8 @@ jobs:
       - run: go test ./...
       # Testing with -update enabled isn't intended to update the golden files, but to help validate that there aren't
       # problems when updating is enabled, race conditions in the update process etc
-      - run: go test -race ./... -update
+      # Tests are run multiple times to help expose race-conditions as they aren't always reproduced on a single run
+      - run: go test -race -count 5 ./... -update
       - run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
       - name: Upload code coverage
         uses: codecov/codecov-action@v1

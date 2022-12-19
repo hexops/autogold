@@ -76,6 +76,10 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 			t.Fatal(err)
 		}
 		grabLock()
+
+		// cleanDir may not be set until mkTempDir(), so we can't assign this earlier
+		tmpdir := filepath.Join(cleanDir, dir)
+
 		_, ok := cleaned[dir]
 		if !ok {
 			// Move all .golden files in the directory into the temp dir.
@@ -85,8 +89,14 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 				cleanMu.Unlock()
 				t.Fatal(err)
 			}
+
+			if err := os.MkdirAll(tmpdir, 0o700); err != nil {
+				cleanMu.Unlock()
+				t.Fatal(err)
+			}
+
 			for _, match := range matches {
-				err := os.Rename(match, filepath.Join(cleanDir, filepath.Base(match)))
+				err := os.Rename(match, filepath.Join(tmpdir, filepath.Base(match)))
 				if err != nil {
 					cleanMu.Unlock()
 					t.Fatal(err)
@@ -97,7 +107,7 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 		cleanMu.Unlock()
 
 		// Move the golden file for this test back into the testdata dir, if it exists.
-		tmpFile := filepath.Join(cleanDir, filepath.Base(fileName+".golden"))
+		tmpFile := filepath.Join(tmpdir, filepath.Base(fileName+".golden"))
 		err := os.Rename(tmpFile, outFile)
 		if err != nil && !os.IsNotExist(err) {
 			t.Fatal(err)
