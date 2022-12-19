@@ -19,8 +19,10 @@ var (
 	update       = flag.Bool("update", false, "update .golden files, removing unused if running all tests")
 	updateOnly   = flag.Bool("update-only", false, "update .golden files, leaving unused")
 	noUpdateFail = flag.Bool("no-update-fail", false, "do not fail tests if .golden file was updated")
-	cleaned      = map[string]struct{}{}
-	cleanDir     string
+
+	cleanMu  sync.Mutex
+	cleaned  = map[string]struct{}{}
+	cleanDir string
 )
 
 func init() {
@@ -69,6 +71,7 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 	defer unlock()
 
 	if !shouldUpdateOnly() && *update {
+		cleanMu.Lock()
 		if err := mkTempDir(); err != nil {
 			t.Fatal(err)
 		}
@@ -79,15 +82,19 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 			cleaned[dir] = struct{}{}
 			matches, err := filepath.Glob(filepath.Join(dir, "*.golden"))
 			if err != nil {
+				cleanMu.Unlock()
 				t.Fatal(err)
 			}
 			for _, match := range matches {
 				err := os.Rename(match, filepath.Join(cleanDir, filepath.Base(match)))
 				if err != nil {
+					cleanMu.Unlock()
 					t.Fatal(err)
 				}
 			}
 		}
+
+		cleanMu.Unlock()
 
 		// Move the golden file for this test back into the testdata dir, if it exists.
 		tmpFile := filepath.Join(cleanDir, filepath.Base(fileName+".golden"))
