@@ -192,7 +192,7 @@ func Expect(want interface{}) Value {
 					t.Fatal(err)
 				}
 			}
-			if *failOnUpdate {
+			if *failOnUpdate || !*update {
 				writeProfile()
 				t.Log(fmt.Errorf("mismatch (-want +got):\n%s", colorDiff(diff)))
 				t.FailNow()
