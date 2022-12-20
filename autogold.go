@@ -142,7 +142,7 @@ func ExpectFile(t *testing.T, got interface{}, opts ...Option) {
 				t.Fatal(err)
 			}
 		}
-		if *failOnUpdate {
+		if *failOnUpdate || !*update {
 			t.Log(fmt.Errorf("mismatch (-want +got):\n%s", colorDiff(diff)))
 			t.FailNow()
 		}
