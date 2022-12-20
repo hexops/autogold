@@ -13,19 +13,19 @@ func TestEqual(t *testing.T) {
 
 func TestInline(t *testing.T) {
 	got := Bar()
-	// First parameter to Want can be omitted since we're only using a single Want in this test.
+	// First parameter to Expect can be omitted since we're only using a single Expect in this test.
 	//
-	// 2nd parameter to Want is the wanted value - autogold will update this for us.
-	autogold.Want("", &Baz{Name: "Jane", Age: 31}).Equal(t, got)
+	// 2nd parameter to Expect is the wanted value - autogold will update this for us.
+	autogold.Expect("", &Baz{Name: "Jane", Age: 31}).Equal(t, got)
 }
 
 func TestSubtest(t *testing.T) {
 	// Create one of these per sub-test value you want to compare.
-	want := autogold.Want("mysubtest", &Baz{Name: "Jane", Age: 31})
+	expect := autogold.Expect("mysubtest", &Baz{Name: "Jane", Age: 31})
 
 	// Invoke test.Equal once you have your result.
-	t.Run(want.Name(), func(t *testing.T) {
+	t.Run(expect.Name(), func(t *testing.T) {
 		got := Bar()
-		want.Equal(t, got)
+		expect.Equal(t, got)
 	})
 }

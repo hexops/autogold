@@ -20,7 +20,7 @@ import (
 	"golang.org/x/tools/imports"
 )
 
-// Value describes a desired value for a Go test, see Want for more information.
+// Value describes a desired value for a Go test, see Expect for more information.
 type Value interface {
 	// Name returns the value name.
 	Name() string
@@ -65,26 +65,26 @@ func getPackageNameAndPath(dir string) (name, path string, err error) {
 	return pkgs[0].Name, pkgs[0].PkgPath, nil
 }
 
-// Want returns a desired Value which can later be checked for equality against a gotten value.
+// Expect returns a desired Value which can later be checked for equality against a gotten value.
 //
 // The name parameter must be a Go string literal (NOT a variable or expression), and must be unique
 // within the Go test function.
 //
 // When `-update` is specified, autogold will find and replace in the test file by looking for an
-// instance of e.g. `autogold.Want("bar", ...)` beneath the calling `TestFoo` function and replacing
+// instance of e.g. `autogold.Expect("bar", ...)` beneath the calling `TestFoo` function and replacing
 // the `want` value parameter.
-func Want(name string, want interface{}) Value {
+func Expect(name string, want interface{}) Value {
 	return value{
 		name: name,
 		equal: func(t *testing.T, got interface{}, opts ...Option) {
 			t.Helper()
 			var (
 				profGetPackageNameAndPath time.Duration
-				profStringifyWant         time.Duration
+				profStringifyExpect       time.Duration
 				profStringifyGot          time.Duration
 				profDiff                  time.Duration
 				profAcquirePathLock       time.Duration
-				profReplaceWant           time.Duration
+				profReplaceExpect         time.Duration
 			)
 			writeProfile := func() {
 				prof, _ := strconv.ParseBool(os.Getenv("AUTOGOLD_PROFILE"))
@@ -93,11 +93,11 @@ func Want(name string, want interface{}) Value {
 				}
 				fmt.Println("autogold: profile:")
 				fmt.Println("  getPackageNameAndPath:", profGetPackageNameAndPath)
-				fmt.Println("  stringify (want):     ", profStringifyWant)
+				fmt.Println("  stringify (want):     ", profStringifyExpect)
 				fmt.Println("  stringify (got):      ", profStringifyGot)
 				fmt.Println("  diffing   (got):      ", profDiff)
 				fmt.Println("  acquire path lock:    ", profAcquirePathLock)
-				fmt.Println("  rewrite autogold.Want:", profReplaceWant)
+				fmt.Println("  rewrite autogold.Expect:", profReplaceExpect)
 			}
 
 			// Identify the root test name ("TestFoo" in "TestFoo/bar")
@@ -149,7 +149,7 @@ func Want(name string, want interface{}) Value {
 			// Check if the test failed or not by diffing the results.
 			start = time.Now()
 			wantString := stringify(want, opts)
-			profStringifyWant = time.Since(start)
+			profStringifyExpect = time.Since(start)
 			start = time.Now()
 			gotString := stringify(got, opts)
 			profStringifyGot = time.Since(start)
@@ -178,11 +178,11 @@ func Want(name string, want interface{}) Value {
 					}
 				}()
 
-				// Replace the autogold.Want(...) call's `want` parameter with the expression for the
+				// Replace the autogold.Expect(...) call's `want` parameter with the expression for the
 				// value we got.
 				start = time.Now()
-				newTestFile, err := replaceWant(testPath, testName, name, gotString)
-				profReplaceWant = time.Since(start)
+				newTestFile, err := replaceExpect(testPath, testName, name, gotString)
+				profReplaceExpect = time.Since(start)
 				if err != nil {
 					writeProfile()
 					t.Fatal(fmt.Errorf("autogold: %v", err))
@@ -206,19 +206,19 @@ func Want(name string, want interface{}) Value {
 	}
 }
 
-// replaceWant replaces the invocation of:
+// replaceExpect replaces the invocation of:
 //
-//	autogold.Want("value_name", ...)
+//	autogold.Expect("value_name", ...)
 //
 // With:
 //
-//	autogold.Want("value_name", <replacement>)
+//	autogold.Expect("value_name", <replacement>)
 //
 // Underneath a Go testing function named testName, returning an error if it cannot be found.
 //
 // The returned updated file contents have the specified replacement, with goimports ran over the
 // result.
-func replaceWant(testFilePath, testName, valueName, replacement string) ([]byte, error) {
+func replaceExpect(testFilePath, testName, valueName, replacement string) ([]byte, error) {
 	testFileSrc, err := ioutil.ReadFile(testFilePath)
 	if err != nil {
 		return nil, err
@@ -229,7 +229,7 @@ func replaceWant(testFilePath, testName, valueName, replacement string) ([]byte,
 		return nil, fmt.Errorf("parsing file: %v", err)
 	}
 
-	// Locate the autogold.Want() call expression and perform string replacement on its 2nd
+	// Locate the autogold.Expect() call expression and perform string replacement on its 2nd
 	// argument.
 	//
 	// We use string replacement instead of direct ast.Expr swapping so as to ensure that we
@@ -239,7 +239,7 @@ func replaceWant(testFilePath, testName, valueName, replacement string) ([]byte,
 	// see https://github.com/hexops/valast/pull/4. As for "why gofmt(goimports) and not gofumpt
 	// on the final file?", simply because gofmt is a superset of gofumpt and we don't want to make
 	// the call of using gofumpt on behalf of the user.
-	callExpr, err := findWantCallExpr(fset, f, testName, valueName)
+	callExpr, err := findExpectCallExpr(fset, f, testName, valueName)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +269,7 @@ func replaceWant(testFilePath, testName, valueName, replacement string) ([]byte,
 	return newFile, nil
 }
 
-func findWantCallExpr(fset *token.FileSet, f *ast.File, testName, valueName string) (*ast.CallExpr, error) {
+func findExpectCallExpr(fset *token.FileSet, f *ast.File, testName, valueName string) (*ast.CallExpr, error) {
 	var (
 		err             error
 		foundTestFunc   bool
@@ -304,7 +304,7 @@ func findWantCallExpr(fset *token.FileSet, f *ast.File, testName, valueName stri
 		if !ok {
 			return true
 		}
-		if !isWantSelectorExpr(se) {
+		if !isExpectSelectorExpr(se) {
 			return true
 		}
 		if len(ce.Args) != 2 {
@@ -313,7 +313,7 @@ func findWantCallExpr(fset *token.FileSet, f *ast.File, testName, valueName stri
 		valueNameLit, ok := ce.Args[0].(*ast.BasicLit)
 		if !ok || valueNameLit.Kind != token.STRING {
 			position := fset.Position(ce.Args[0].Pos())
-			err = fmt.Errorf("%s: autogold.Want(...) call must start with a Go string literal", position)
+			err = fmt.Errorf("%s: autogold.Expect(...) call must start with a Go string literal", position)
 			return false
 		}
 		var val string
@@ -345,15 +345,15 @@ func findWantCallExpr(fset *token.FileSet, f *ast.File, testName, valueName stri
 			} else {
 				didFind = strings.Join(foundValueNames, ", ")
 			}
-			return nil, fmt.Errorf("%s: could not find autogold.Want(%q, ...) function call (did find %s)", fset.File(f.Pos()).Name(), valueName, didFind)
+			return nil, fmt.Errorf("%s: could not find autogold.Expect(%q, ...) function call (did find %s)", fset.File(f.Pos()).Name(), valueName, didFind)
 		}
-		return nil, fmt.Errorf("%s: could not find autogold.Want(%q, ...) function call", fset.File(f.Pos()).Name(), valueName)
+		return nil, fmt.Errorf("%s: could not find autogold.Expect(%q, ...) function call", fset.File(f.Pos()).Name(), valueName)
 	}
 	return foundCallExpr, nil
 }
 
-func isWantSelectorExpr(v *ast.SelectorExpr) bool {
-	if v.Sel.Name != "Want" {
+func isExpectSelectorExpr(v *ast.SelectorExpr) bool {
+	if v.Sel.Name != "Expect" {
 		return false
 	}
 	ident, ok := v.X.(*ast.Ident)
