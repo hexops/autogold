@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func Test_replaceWant(t *testing.T) {
+func Test_replaceExpect(t *testing.T) {
 	tests := []struct {
 		file                string
 		testName, valueName string
@@ -46,28 +46,28 @@ C error
 			testName:    "TestTime",
 			valueName:   "WrongValueName",
 			replacement: `"replacement"`,
-			err:         `testdata/replace_want/complex: could not find autogold.Want("WrongValueName", ...) function call (did find "Europe", "America", …)`,
+			err:         `testdata/replace_expect/complex: could not find autogold.Expect("WrongValueName", ...) function call (did find "Europe", "America", …)`,
 		},
 		{
 			file:        "basic",
 			testName:    "TestFoo",
 			valueName:   "WrongValueNameWithOthers",
 			replacement: `"replacement"`,
-			err:         `testdata/replace_want/basic: could not find autogold.Want("WrongValueNameWithOthers", ...) function call (did find "Bar")`,
+			err:         `testdata/replace_expect/basic: could not find autogold.Expect("WrongValueNameWithOthers", ...) function call (did find "Bar")`,
 		},
 		{
 			file:        "complex",
 			testName:    "TestWrongName",
 			valueName:   "WrongTestName",
 			replacement: `"replacement"`,
-			err:         `testdata/replace_want/complex: could not find autogold.Want("WrongTestName", ...) function call (did find "Europe", "America", …)`,
+			err:         `testdata/replace_expect/complex: could not find autogold.Expect("WrongTestName", ...) function call (did find "Europe", "America", …)`,
 		},
 		{
 			file:        "missing",
 			testName:    "TestFoo",
 			valueName:   "Missing",
 			replacement: `"replacement"`,
-			err:         `testdata/replace_want/missing: could not find autogold.Want("Missing", ...) function call`,
+			err:         `testdata/replace_expect/missing: could not find autogold.Expect("Missing", ...) function call`,
 		},
 		{
 			file:        "issue7",
@@ -78,8 +78,8 @@ C error
 	}
 	for _, tst := range tests {
 		t.Run(tst.file+"_"+tst.valueName, func(t *testing.T) {
-			testFilePath := filepath.Join("testdata/replace_want", tst.file)
-			got, err := replaceWant(testFilePath, tst.testName, tst.valueName, tst.replacement)
+			testFilePath := filepath.Join("testdata/replace_expect", tst.file)
+			got, err := replaceExpect(testFilePath, tst.testName, tst.valueName, tst.replacement)
 			if tst.err != "" && tst.err != fmt.Sprint(err) || tst.err == "" && err != nil {
 				t.Fatal("\ngot:\n", err, "\nwant:\n", tst.err)
 			}

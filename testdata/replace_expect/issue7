@@ -12,8 +12,8 @@ type newUserStartTestSuite struct {
 }
 
 func (ts *newUserStartTestSuite) TestString() {
-	want := autogold.Want("reg", "replacement")
-	want.Equal(ts.T(), `registration`)
+	expect := autogold.Expect("reg", nil)
+	expect.Equal(ts.T(), `registration`)
 }
 
 func TestNewUserStartTestSuite(t *testing.T) {
