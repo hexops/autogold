@@ -121,3 +121,13 @@ The following are alternatives to autogold, making note of the differences we fo
     - Works on `interface{}` inputs.
     - [Uses inactive go-spew project](https://github.com/davecgh/go-spew/issues/128) to format Go structs.
     - Does not support inline snapshots / code updating.
+
+## Changelog
+
+#### v1.3.1
+
+* Improved Go code formatting (updated valast and gofumpt versions)
+* Added usage of `t.Helper` to improve line:column information of test failures. 
+* Fixed an issue where `-update` subtest names could collide and incorrectly fail tests.
+* Fixed a data race when `-update` is used
+* Diffs are now printed with ANSII color codes
