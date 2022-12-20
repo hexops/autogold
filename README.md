@@ -20,7 +20,7 @@ import "github.com/hexops/autogold"
 autogold.ExpectFile(t, got)
 ```
 
-`go test -update` will now create/update a `testdata/<test name>.golden` file for you automatically. If your tests change over time you can use `go test -update -cleanup` to also have it remove _unused_ `.golden` files.
+`go test -update` will now create/update a `testdata/<test name>.golden` file for you automatically. If your tests change over time you can use `go test -update -clean` to also have it remove _unused_ golden files.
 
 ## Automatic inline test updating
 
@@ -149,7 +149,7 @@ func TestFoo(t *testing.T) {
 
 Additionally, CLI flag behavior has been improved substantially based on experience working in very large enterprise Go codebases:
 
-* `-update` now behaves like `-update-only`, it no longer removes unused golden files which is faster in very large codebases. Instead, you may use `-update -cleanup` to remove unused golden files. `-update-only` is removed.
+* `-update` now behaves like `-update-only`, it no longer removes unused golden files which is faster in very large codebases. Instead, you may use `-update -clean` to remove unused golden files. `-update-only` is removed.
 * Previously autogold would fail tests when running `-update`, meaning you may need to run `go test -update` many times to get to your desired end-state if updating a lot of test cases. Now we match the behavior of OCaml expect tests in not failing tests by default (you can now specify `-fail-on-update`)
 * `-fail-on-update` now uses `t.FailNow()` instead of `t.Fatal()` to allow as many tests as possible to succeed when performing an update operation.
 * `autogold.Want` has been deprecated in favor of `autogold.Expect`
