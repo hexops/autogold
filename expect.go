@@ -22,19 +22,15 @@ import (
 
 // Value describes a desired value for a Go test, see Expect for more information.
 type Value interface {
-	// Name returns the value name.
-	Name() string
-
 	// Equal checks if `got` matches the desired test value, invoking t.Fatal otherwise.
 	Equal(t *testing.T, got interface{}, opts ...Option)
 }
 
 type value struct {
-	name  string
+	line  int
 	equal func(t *testing.T, got interface{}, opts ...Option)
 }
 
-func (v value) Name() string { return v.name }
 func (v value) Equal(t *testing.T, got interface{}, opts ...Option) {
 	t.Helper()
 	v.equal(t, got, opts...)
@@ -65,17 +61,16 @@ func getPackageNameAndPath(dir string) (name, path string, err error) {
 	return pkgs[0].Name, pkgs[0].PkgPath, nil
 }
 
-// Expect returns a desired Value which can later be checked for equality against a gotten value.
-//
-// The name parameter must be a Go string literal (NOT a variable or expression), and must be unique
-// within the Go test function.
+// Expect returns an expected Value which can later be checked for equality against a value a test
+// produces.
 //
 // When `-update` is specified, autogold will find and replace in the test file by looking for an
-// instance of e.g. `autogold.Expect("bar", ...)` beneath the calling `TestFoo` function and replacing
-// the `want` value parameter.
-func Expect(name string, want interface{}) Value {
+// invocation of `autogold.Expect(...)` at the same line as the callstack indicates for this function
+// call, rewriting the `want` value parameter for you.
+func Expect(want interface{}) Value {
+	_, _, line, _ := runtime.Caller(1)
 	return value{
-		name: name,
+		line: line,
 		equal: func(t *testing.T, got interface{}, opts ...Option) {
 			t.Helper()
 			var (
@@ -178,10 +173,10 @@ func Expect(name string, want interface{}) Value {
 					}
 				}()
 
-				// Replace the autogold.Expect(...) call's `want` parameter with the expression for the
-				// value we got.
+				// Replace the autogold.Expect(...) call's `want` parameter with the expression for
+				// the value we got.
 				start = time.Now()
-				newTestFile, err := replaceExpect(testPath, testName, name, gotString)
+				newTestFile, err := replaceExpect(testPath, testName, line, gotString)
 				profReplaceExpect = time.Since(start)
 				if err != nil {
 					writeProfile()
@@ -199,7 +194,7 @@ func Expect(name string, want interface{}) Value {
 			}
 			if *failOnUpdate {
 				writeProfile()
-				t.Log(fmt.Errorf("mismatch (-want +got):\n%s", diff))
+				t.Log(fmt.Errorf("mismatch (-want +got):\n%s", colorDiff(diff)))
 				t.FailNow()
 			}
 		},
@@ -208,17 +203,18 @@ func Expect(name string, want interface{}) Value {
 
 // replaceExpect replaces the invocation of:
 //
-//	autogold.Expect("value_name", ...)
+//	autogold.Expect(...)
 //
 // With:
 //
-//	autogold.Expect("value_name", <replacement>)
+//	autogold.Expect(<replacement>)
 //
-// Underneath a Go testing function named testName, returning an error if it cannot be found.
+// Based on the callstack location of the invocation provided, returning an error if it cannot be
+// found.
 //
 // The returned updated file contents have the specified replacement, with goimports ran over the
 // result.
-func replaceExpect(testFilePath, testName, valueName, replacement string) ([]byte, error) {
+func replaceExpect(testFilePath, testName string, line int, replacement string) ([]byte, error) {
 	testFileSrc, err := ioutil.ReadFile(testFilePath)
 	if err != nil {
 		return nil, err
@@ -239,11 +235,11 @@ func replaceExpect(testFilePath, testName, valueName, replacement string) ([]byt
 	// see https://github.com/hexops/valast/pull/4. As for "why gofmt(goimports) and not gofumpt
 	// on the final file?", simply because gofmt is a superset of gofumpt and we don't want to make
 	// the call of using gofumpt on behalf of the user.
-	callExpr, err := findExpectCallExpr(fset, f, testName, valueName)
+	callExpr, err := findExpectCallExpr(fset, f, testName, line)
 	if err != nil {
 		return nil, err
 	}
-	arg := callExpr.Args[1]
+	arg := callExpr.Args[0]
 	start := testFileSrc[:fset.Position(arg.Pos()).Offset]
 	end := testFileSrc[fset.Position(arg.End()).Offset:]
 
@@ -269,30 +265,10 @@ func replaceExpect(testFilePath, testName, valueName, replacement string) ([]byt
 	return newFile, nil
 }
 
-func findExpectCallExpr(fset *token.FileSet, f *ast.File, testName, valueName string) (*ast.CallExpr, error) {
-	var (
-		err             error
-		foundTestFunc   bool
-		foundCallExpr   *ast.CallExpr
-		foundValueNames []string
-	)
+func findExpectCallExpr(fset *token.FileSet, f *ast.File, testName string, line int) (*ast.CallExpr, error) {
+	var foundCallExpr *ast.CallExpr
 	pre := func(cursor *astutil.Cursor) bool {
-		if err != nil {
-			return false
-		}
 		node := cursor.Node()
-		if !foundTestFunc {
-			if _, ok := node.(*ast.File); ok {
-				return true
-			}
-			if f, ok := node.(*ast.FuncDecl); ok {
-				if f.Name.Name == testName {
-					foundTestFunc = true
-				}
-				return true
-			}
-			return false
-		}
 		if foundCallExpr != nil {
 			return false
 		}
@@ -307,47 +283,19 @@ func findExpectCallExpr(fset *token.FileSet, f *ast.File, testName, valueName st
 		if !isExpectSelectorExpr(se) {
 			return true
 		}
-		if len(ce.Args) != 2 {
+		if len(ce.Args) != 1 {
 			return true
 		}
-		valueNameLit, ok := ce.Args[0].(*ast.BasicLit)
-		if !ok || valueNameLit.Kind != token.STRING {
-			position := fset.Position(ce.Args[0].Pos())
-			err = fmt.Errorf("%s: autogold.Expect(...) call must start with a Go string literal", position)
-			return false
-		}
-		var val string
-		val, err = strconv.Unquote(valueNameLit.Value)
-		if err != nil {
-			return false
-		}
-		if val != valueName {
-			foundValueNames = append(foundValueNames, valueNameLit.Value)
+		position := fset.Position(ce.Args[0].Pos())
+		if position.Line != line {
 			return true
 		}
 		foundCallExpr = ce
 		return true
 	}
 	f = astutil.Apply(f, pre, nil).(*ast.File)
-	if err != nil {
-		return nil, err
-	}
-	if !foundTestFunc {
-		return nil, fmt.Errorf("%s: could not find test function: %s", fset.File(f.Pos()).Name(), testName)
-	}
 	if foundCallExpr == nil {
-		if len(foundValueNames) > 0 {
-			var didFind string
-			if len(foundValueNames) > 2 {
-				foundValueNames = foundValueNames[:2]
-				didFind = strings.Join(foundValueNames, ", ")
-				didFind += ", …"
-			} else {
-				didFind = strings.Join(foundValueNames, ", ")
-			}
-			return nil, fmt.Errorf("%s: could not find autogold.Expect(%q, ...) function call (did find %s)", fset.File(f.Pos()).Name(), valueName, didFind)
-		}
-		return nil, fmt.Errorf("%s: could not find autogold.Expect(%q, ...) function call", fset.File(f.Pos()).Name(), valueName)
+		return nil, fmt.Errorf("%s: could not find autogold.Expect(…) function call on line %v", fset.File(f.Pos()).Name(), line)
 	}
 	return foundCallExpr, nil
 }
