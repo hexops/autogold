@@ -28,7 +28,7 @@ func testParallel(t *testing.T, prefix string) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			autogold.Equal(t, name)
+			autogold.ExpectFile(t, name)
 		})
 	}
 }

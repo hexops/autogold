@@ -29,15 +29,15 @@ func init() {
 	color.NoColor = false
 }
 
-// Equal checks if got is equal to the saved `testdata/<test name>.golden` test file. If it is not,
-// t.Fatal is called with a multi-line diff comparison.
+// ExpectFile checks if got is equal to the saved `testdata/<test name>.golden` test file. If it is
+// not, the test is failed.
 //
 // If the `go test -update` flag is specified, the .golden files will be updated/created
-// automatically.
+// automatically and the test will not fail unless `-fail-on-update` is specified.
 //
 // If the input value is of type Raw, its contents will be directly used instead of the value being
 // formatted as a Go literal.
-func Equal(t *testing.T, got interface{}, opts ...Option) {
+func ExpectFile(t *testing.T, got interface{}, opts ...Option) {
 	dir := testdataDir(opts)
 	fileName := testName(t, opts)
 	outFile := filepath.Join(dir, fileName+".golden")
