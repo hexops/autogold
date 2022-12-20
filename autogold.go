@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	update       = flag.Bool("update", false, "update .golden files, removing unused if running all tests")
-	updateOnly   = flag.Bool("update-only", false, "update .golden files, leaving unused")
+	update       = flag.Bool("update", false, "update .golden files (leaves unused files)")
+	cleanup      = flag.Bool("cleanup", false, "remove unused .golden files")
 	noUpdateFail = flag.Bool("no-update-fail", false, "do not fail tests if .golden file was updated")
 
 	cleanMu  sync.Mutex
@@ -70,7 +70,7 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 	}
 	defer unlock()
 
-	if !shouldUpdateOnly() && *update {
+	if shouldCleanup() {
 		cleanMu.Lock()
 		if err := mkTempDir(); err != nil {
 			t.Fatal(err)
@@ -126,12 +126,12 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 
 	_, isRaw := got.(Raw)
 	isEmptyFile := isRaw && gotString == ""
-	if isEmptyFile && (*update || shouldUpdateOnly()) {
+	if isEmptyFile && shouldCleanup() {
 		grabLock()
 		os.Remove(outFile)
 	}
 	if diff != "" {
-		if *update || shouldUpdateOnly() {
+		if *update {
 			grabLock()
 			if _, err := os.Stat(dir); os.IsNotExist(err) {
 				if err := os.MkdirAll(dir, 0o700); err != nil {
@@ -217,19 +217,17 @@ func acquirePathLock(path string) (func() error, error) {
 	}, nil
 }
 
-func shouldUpdateOnly() bool {
-	if *updateOnly {
-		return true
+func shouldCleanup() bool {
+	if !*cleanup {
+		return false
 	}
-	if *update {
-		for _, arg := range os.Args {
-			if strings.HasPrefix(arg, "-test.run") {
-				// Running a subset of the tests, so don't remove unused files.
-				return true
-			}
+	for _, arg := range os.Args {
+		if strings.HasPrefix(arg, "-test.run") {
+			// Running a subset of the tests, so don't remove unused files.
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 func mkTempDir() error {

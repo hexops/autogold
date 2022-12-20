@@ -20,7 +20,7 @@ import "github.com/hexops/autogold"
 autogold.Equal(t, got)
 ```
 
-`go test -update` will now create/update a `testdata/<test name>.golden` file for you automatically.
+`go test -update` will now create/update a `testdata/<test name>.golden` file for you automatically. If your tests change over time you can use `go test -update -cleanup` to also have it remove _unused_ `.golden` files.
 
 ## Automatic inline test updating
 
@@ -123,6 +123,12 @@ The following are alternatives to autogold, making note of the differences we fo
     - Does not support inline snapshots / code updating.
 
 ## Changelog
+
+#### v1.4.0 (not released)
+
+* `-update-only` has been removed.
+* `-update` now behaves as `-update-only` once did: it no longer removes unused golden files.
+* A new `-cleanup` flag has been added to remove unused golden files.
 
 #### v1.3.1
 
