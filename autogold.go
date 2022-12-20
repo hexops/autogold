@@ -17,7 +17,7 @@ import (
 
 var (
 	update       = flag.Bool("update", false, "update .golden files, leaving unused)")
-	cleanup      = flag.Bool("cleanup", false, "remove unused .golden files (slightly slower)")
+	clean        = flag.Bool("clean", false, "remove unused .golden files (slightly slower)")
 	failOnUpdate = flag.Bool("fail-on-update", false, "If a .golden file is updated, fail the test")
 
 	cleanMu  sync.Mutex
@@ -219,7 +219,7 @@ func acquirePathLock(path string) (func() error, error) {
 }
 
 func shouldCleanup() bool {
-	if !*cleanup {
+	if !*clean {
 		return false
 	}
 	for _, arg := range os.Args {
