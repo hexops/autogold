@@ -9,27 +9,28 @@ import (
 
 func Test_replaceExpect(t *testing.T) {
 	tests := []struct {
-		file                string
-		testName, valueName string
-		replacement         string
-		err                 string
+		file        string
+		testName    string
+		line        int
+		replacement string
+		err         string
 	}{
 		{
 			file:        "basic",
 			testName:    "TestFoo",
-			valueName:   "Bar",
+			line:        10,
 			replacement: `"replacement"`,
 		},
 		{
 			file:        "complex",
 			testName:    "TestTime",
-			valueName:   "America",
+			line:        16,
 			replacement: `"replacement"`,
 		},
 		{
-			file:      "complex",
-			testName:  "TestTime",
-			valueName: "Europe",
+			file:     "complex",
+			testName: "TestTime",
+			line:     18,
 			replacement: `&struct{
 A bool
 C error
@@ -38,48 +39,48 @@ C error
 		{
 			file:        "complex",
 			testName:    "TestTime",
-			valueName:   "Australia",
+			line:        17,
 			replacement: `"replacement"`,
 		},
 		{
 			file:        "complex",
 			testName:    "TestTime",
-			valueName:   "WrongValueName",
+			line:        0,
 			replacement: `"replacement"`,
-			err:         `testdata/replace_expect/complex: could not find autogold.Expect("WrongValueName", ...) function call (did find "Europe", "America", …)`,
+			err:         `testdata/replace_expect/complex: could not find autogold.Expect(…) function call on line 0`,
 		},
 		{
 			file:        "basic",
 			testName:    "TestFoo",
-			valueName:   "WrongValueNameWithOthers",
+			line:        0,
 			replacement: `"replacement"`,
-			err:         `testdata/replace_expect/basic: could not find autogold.Expect("WrongValueNameWithOthers", ...) function call (did find "Bar")`,
+			err:         `testdata/replace_expect/basic: could not find autogold.Expect(…) function call on line 0`,
 		},
 		{
 			file:        "complex",
 			testName:    "TestWrongName",
-			valueName:   "WrongTestName",
+			line:        0,
 			replacement: `"replacement"`,
-			err:         `testdata/replace_expect/complex: could not find autogold.Expect("WrongTestName", ...) function call (did find "Europe", "America", …)`,
+			err:         `testdata/replace_expect/complex: could not find autogold.Expect(…) function call on line 0`,
 		},
 		{
 			file:        "missing",
 			testName:    "TestFoo",
-			valueName:   "Missing",
+			line:        0,
 			replacement: `"replacement"`,
-			err:         `testdata/replace_expect/missing: could not find autogold.Expect("Missing", ...) function call`,
+			err:         `testdata/replace_expect/missing: could not find autogold.Expect(…) function call on line 0`,
 		},
 		{
 			file:        "issue7",
 			testName:    "TestNewUserStartTestSuite",
-			valueName:   "reg",
+			line:        15,
 			replacement: `"replacement"`,
 		},
 	}
 	for _, tst := range tests {
-		t.Run(tst.file+"_"+tst.valueName, func(t *testing.T) {
+		t.Run(tst.file+"_"+fmt.Sprint(tst.line), func(t *testing.T) {
 			testFilePath := filepath.Join("testdata/replace_expect", tst.file)
-			got, err := replaceExpect(testFilePath, tst.testName, tst.valueName, tst.replacement)
+			got, err := replaceExpect(testFilePath, tst.testName, tst.line, tst.replacement)
 			if tst.err != "" && tst.err != fmt.Sprint(err) || tst.err == "" && err != nil {
 				t.Fatal("\ngot:\n", err, "\nwant:\n", tst.err)
 			}

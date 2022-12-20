@@ -12,7 +12,7 @@ type newUserStartTestSuite struct {
 }
 
 func (ts *newUserStartTestSuite) TestString() {
-	expect := autogold.Expect(nil)
+	expect := autogold.Expect("replacement")
 	expect.Equal(ts.T(), `registration`)
 }
 
