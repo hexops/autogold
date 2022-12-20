@@ -197,9 +197,10 @@ func Want(name string, want interface{}) Value {
 					t.Fatal(err)
 				}
 			}
-			if !*noUpdateFail {
+			if *failOnUpdate {
 				writeProfile()
-				t.Fatal(fmt.Errorf("mismatch (-want +got):\n%s", diff))
+				t.Log(fmt.Errorf("mismatch (-want +got):\n%s", diff))
+				t.FailNow()
 			}
 		},
 	}

@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	update       = flag.Bool("update", false, "update .golden files (leaves unused files)")
-	cleanup      = flag.Bool("cleanup", false, "remove unused .golden files")
-	noUpdateFail = flag.Bool("no-update-fail", false, "do not fail tests if .golden file was updated")
+	update       = flag.Bool("update", false, "update .golden files, leaving unused)")
+	cleanup      = flag.Bool("cleanup", false, "remove unused .golden files (slightly slower)")
+	failOnUpdate = flag.Bool("fail-on-update", false, "If a .golden file is updated, fail the test")
 
 	cleanMu  sync.Mutex
 	cleaned  = map[string]struct{}{}
@@ -142,8 +142,9 @@ func Equal(t *testing.T, got interface{}, opts ...Option) {
 				t.Fatal(err)
 			}
 		}
-		if !*noUpdateFail {
-			t.Fatal(fmt.Errorf("mismatch (-want +got):\n%s", colorDiff(diff)))
+		if *failOnUpdate {
+			t.Log(fmt.Errorf("mismatch (-want +got):\n%s", colorDiff(diff)))
+			t.FailNow()
 		}
 	}
 }

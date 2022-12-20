@@ -129,6 +129,8 @@ The following are alternatives to autogold, making note of the differences we fo
 * `-update-only` has been removed.
 * `-update` now behaves as `-update-only` once did: it no longer removes unused golden files.
 * A new `-cleanup` flag has been added to remove unused golden files.
+* `-no-update-fail` has been replaced by `-fail-on-update`, making the default behavior of `-update` to continue running tests and silently updating golden file contents similar to OCaml expect tests (see #8 for why this is a good quality of life improvement)
+* `-fail-on-update` now uses `t.FailNow()` instead of `t.Fatal`
 
 #### v1.3.1
 
