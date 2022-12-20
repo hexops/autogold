@@ -84,7 +84,7 @@ C error
 			if tst.err != "" && tst.err != fmt.Sprint(err) || tst.err == "" && err != nil {
 				t.Fatal("\ngot:\n", err, "\nwant:\n", tst.err)
 			}
-			Equal(t, Raw(got))
+			ExpectFile(t, Raw(got))
 		})
 	}
 }
@@ -140,7 +140,7 @@ func testEqualSubtestSameNames(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// Subtests are intentionally not run in parallel, as that makes this issue more easily reproducible
 
-			Equal(t, fmt.Sprintf("%s :: %s", parent, name))
+			ExpectFile(t, fmt.Sprintf("%s :: %s", parent, name))
 		})
 	}
 }

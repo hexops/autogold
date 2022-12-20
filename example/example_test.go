@@ -6,9 +6,9 @@ import (
 	"github.com/hexops/autogold"
 )
 
-func TestEqual(t *testing.T) {
+func TestExpectFile(t *testing.T) {
 	got := Bar()
-	autogold.Equal(t, got)
+	autogold.ExpectFile(t, got)
 }
 
 func TestInline(t *testing.T) {
