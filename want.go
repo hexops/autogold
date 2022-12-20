@@ -77,7 +77,7 @@ func Want(name string, want interface{}) Value {
 	return value{
 		name: name,
 		equal: func(t *testing.T, got interface{}, opts ...Option) {
-			t.Hepler()
+			t.Helper()
 			var (
 				profGetPackageNameAndPath time.Duration
 				profStringifyWant         time.Duration
@@ -207,11 +207,11 @@ func Want(name string, want interface{}) Value {
 
 // replaceWant replaces the invocation of:
 //
-// 	autogold.Want("value_name", ...)
+//	autogold.Want("value_name", ...)
 //
 // With:
 //
-// 	autogold.Want("value_name", <replacement>)
+//	autogold.Want("value_name", <replacement>)
 //
 // Underneath a Go testing function named testName, returning an error if it cannot be found.
 //
