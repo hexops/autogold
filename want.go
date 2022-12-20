@@ -199,7 +199,7 @@ func Want(name string, want interface{}) Value {
 			}
 			if *failOnUpdate {
 				writeProfile()
-				t.Log(fmt.Errorf("mismatch (-want +got):\n%s", diff))
+				t.Log(fmt.Errorf("mismatch (-want +got):\n%s", colorDiff(diff)))
 				t.FailNow()
 			}
 		},
