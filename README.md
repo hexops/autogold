@@ -17,28 +17,30 @@ Write in a Go test:
 ```Go
 import "github.com/hexops/autogold"
 ...
-autogold.Equal(t, got)
+autogold.ExpectFile(t, got)
 ```
 
 `go test -update` will now create/update a `testdata/<test name>.golden` file for you automatically. If your tests change over time you can use `go test -update -cleanup` to also have it remove _unused_ `.golden` files.
 
 ## Automatic inline test updating
 
-Write in a Go test:
+In a Go test, simply call `autogold.Expect(want).Equal(t, got)`, passing `nil` as the value you `want` initially:
 
 ```Go
-want := autogold.Want("my_test", nil)
-want.Equal(t, got)
+func TestFoo(t *testing.T) {
+	...
+	autogold.Expect(nil).Equal(t, got)
+}
 ```
 
-`go test -update` will automatically update the `autogold.Want("my_test", ...)` call with the Go syntax for whatever value your test `got` (complex Go struct, slices, strings, etc.)
+Run `go test -update` and autogold will automatically update the `autogold.Expect(want)` Go syntax with the actual value your test `got`. It works with complex Go structs, slices, strings, etc.
 
 ## Diffs
 
-Anytime your test produces a result that is unexpected, you'll get very nice diffs showing exactly what changed. It does this by [converting values at runtime directly to a formatted Go AST](https://github.com/hexops/valast), and using the same [diffing library the Go language server uses](https://github.com/hexops/gotextdiff):
+Anytime your test produces a result that is unexpected, you'll get a nice diff showing exactly what changed. It does this by [converting values at runtime directly to a formatted Go AST](https://github.com/hexops/valast), and using the same [diffing library the Go language server uses](https://github.com/hexops/gotextdiff):
 
 ```
---- FAIL: TestEqual (0.08s)
+--- FAIL: TestFoo (0.08s)
     autogold.go:91: mismatch (-want +got):
         --- want
         +++ got
@@ -48,34 +50,35 @@ Anytime your test produces a result that is unexpected, you'll get very nice dif
 
 ## Subtesting
 
-Use [table-driven Go subtests](https://blog.golang.org/subtests)? `autogold.Want` and `go test -update` will automatically find and replace the `nil` values for you:
+[Table-driven Go subtests](https://blog.golang.org/subtests) are supported nicely as you can call `.Equal(got)` later, so that `go test -update` will update your table-driven test values defined earlier for you:
 
 ```Go
 func TestTime(t *testing.T) {
 	testCases := []struct {
-		gmt  string
-		loc  string
-		want autogold.Value
+		gmt    string
+		loc    string
+		expect autogold.Value // autogold: the value we expect
 	}{
-		{"12:31", "Europe/Zuri", autogold.Want("Europe", nil)},
-		{"12:31", "America/New_York", autogold.Want("America", nil)},
-		{"08:08", "Australia/Sydney", autogold.Want("Australia", nil)},
+		{"12:31", "Europe/Zuri", autogold.Expect(nil)},
+		{"12:31", "America/New_York", autogold.Expect(nil)},
+		{"08:08", "Australia/Sydney", autogold.Expect(nil)},
 	}
 	for _, tc := range testCases {
-		t.Run(tc.want.Name(), func(t *testing.T) {
+		t.Run(tc.loc, func(t *testing.T) {
 			loc, err := time.LoadLocation(tc.loc)
 			if err != nil {
 				t.Fatal("could not load location")
 			}
 			gmt, _ := time.Parse("15:04", tc.gmt)
 			got := gmt.In(loc).Format("15:04")
-			tc.want.Equal(t, got)
+
+			tc.expect.Equal(t, got) // autogold: tell it the value our test produced
 		})
 	}
 }
 ```
 
-It works by finding the relevant `autogold.Want("<unique name>", ...)` call below the named `TestTime` function, and then replacing the `nil` parameter (or anything that was there.)
+It works by finding the relevant `autogold.Expect(want)` call for you based on callstack information / matching line number in the file, and then rewrites the `nil` parameter (or any other value that was there.)
 
 ## What are golden files, when should they be used?
 
@@ -99,7 +102,7 @@ go test -count=1 -run TestSomething . -update
 
 - **Pass a string to autogold**: It will be formatted as a Go string for you in the resulting `.golden` file / in Go tests.
 - **Use your own formatting (JSON, etc.)**: Make your `got` value of type `autogold.Raw("foobar")`, and it will be used as-is for `.golden` files (not allowed with inline tests.)
-- **Exclude unexported fields**: `autogold.Equal(t, got, autogold.ExportedOnly())`
+- **Exclude unexported fields**: `autogold.ExpectFile(t, got, autogold.ExportedOnly())`
 
 ## Backwards compatibility
 
@@ -124,14 +127,37 @@ The following are alternatives to autogold, making note of the differences we fo
 
 ## Changelog
 
-#### v1.4.0 (not released)
+#### v2.0.0 (not released)
 
-* `-update-only` has been removed.
-* `-update` now behaves as `-update-only` once did: it no longer removes unused golden files.
-* A new `-cleanup` flag has been added to remove unused golden files.
-* `-no-update-fail` has been replaced by `-fail-on-update`, making the default behavior of `-update` to continue running tests and silently updating golden file contents similar to OCaml expect tests (see #8 for why this is a good quality of life improvement)
-* `-fail-on-update` now uses `t.FailNow()` instead of `t.Fatal`
-* `autogold.Want` may now be called anywhere in a test file, not just inside a `TestFoo` function.
+Writing a unique name with inline tests is no longer required. Previously you must write a unique name as the first parameter to `Want` and it must have been inside a `TestFoo` function for autogold to find it:
+
+```go
+func TestFoo(t *testing.T) {
+	...
+	autogold.Want("unique name inside TestFoo", want).Equal(t, nil)
+}
+```
+
+This can be rewritten as `autogold.Expect(want).Equal(t, got)` and no unique name is required, the function call can be placed anywhere inside your Go test file as autogold will now update the invocation based on callstack information:
+
+```go
+func TestFoo(t *testing.T) {
+	...
+	autogold.Expect(want).Equal(t, nil)
+}
+```
+
+Additionally, CLI flag behavior has been improved substantially based on experience working in very large enterprise Go codebases:
+
+* `-update` now behaves like `-update-only`, it no longer removes unused golden files which is faster in very large codebases. Instead, you may use `-update -cleanup` to remove unused golden files. `-update-only` is removed.
+* Previously autogold would fail tests when running `-update`, meaning you may need to run `go test -update` many times to get to your desired end-state if updating a lot of test cases. Now we match the behavior of OCaml expect tests in not failing tests by default (you can now specify `-fail-on-update`)
+* `-fail-on-update` now uses `t.FailNow()` instead of `t.Fatal()` to allow as many tests as possible to succeed when performing an update operation.
+* `autogold.Want` has been deprecated in favor of `autogold.Expect`
+
+Finally, please note the renaming of functions before and after:
+
+* Inline tests: `autogold.Want` -> `autogold.Expect`
+* File tests: `autogold.Equal` -> `autogold.ExpectFile`
 
 #### v1.3.1
 
