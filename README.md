@@ -127,7 +127,7 @@ The following are alternatives to autogold, making note of the differences we fo
 
 ## Changelog
 
-#### v2.0.0 (not released)
+#### v2.0.0
 
 Writing a unique name with inline tests is no longer required. Previously you must write a unique name as the first parameter to `Want` and it must have been inside a `TestFoo` function for autogold to find it:
 
