@@ -84,7 +84,7 @@ C error
 			changesByFile = map[string]*fileChanges{}
 
 			testFilePath := filepath.Join("testdata/replace_expect", tst.file)
-			got, err := replaceExpect(testFilePath, tst.testName, tst.line, tst.replacement, false)
+			got, err := replaceExpect(t, testFilePath, tst.testName, tst.line, tst.replacement, false)
 			if tst.err != "" && tst.err != fmt.Sprint(err) || tst.err == "" && err != nil {
 				t.Fatal("\ngot:\n", err, "\nwant:\n", tst.err)
 			}
@@ -164,7 +164,7 @@ func Test_replaceExpect_multiple(t *testing.T) {
 
 	for _, r := range replacements {
 		r := r
-		_, err := replaceExpect(tmpFile, r.testName, r.line, r.replacement, true)
+		_, err := replaceExpect(t, tmpFile, r.testName, r.line, r.replacement, true)
 		if err != nil {
 			t.Log("\ngot:\n", err, "\nwant:\n", err)
 			t.Fail()

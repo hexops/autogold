@@ -177,7 +177,7 @@ func Expect(want interface{}) Value {
 				// Replace the autogold.Expect(...) call's `want` parameter with the expression for
 				// the value we got.
 				start = time.Now()
-				_, err = replaceExpect(testPath, testName, line, gotString, true)
+				_, err = replaceExpect(t, testPath, testName, line, gotString, true)
 				profReplaceExpect = time.Since(start)
 				if err != nil {
 					writeProfile()
@@ -250,12 +250,16 @@ var changesByFile = map[string]*fileChanges{}
 //
 // The returned updated file contents have the specified replacement, with goimports ran over the
 // result.
-func replaceExpect(testFilePath, testName string, line int, replacement string, writeFile bool) ([]byte, error) {
+func replaceExpect(t *testing.T, testFilePath, testName string, line int, replacement string, writeFile bool) ([]byte, error) {
 	unlock, err := acquirePathLock(testFilePath)
 	if err != nil {
 		return nil, err
 	}
-	defer unlock()
+	defer func() {
+		if err := unlock(); err != nil {
+			t.Fatal(fmt.Errorf("autogold: %v", err))
+		}
+	}()
 
 	testFileSrc, err := ioutil.ReadFile(testFilePath)
 	if err != nil {
