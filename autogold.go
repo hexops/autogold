@@ -72,7 +72,7 @@ func ExpectFile(t *testing.T, got interface{}, opts ...Option) {
 
 	if shouldCleanup() {
 		cleanMu.Lock()
-		if err := mkTempDir(); err != nil {
+		if err := mkTempDir(dir); err != nil {
 			t.Fatal(err)
 		}
 		grabLock()
@@ -231,27 +231,25 @@ func shouldCleanup() bool {
 	return true
 }
 
-func mkTempDir() error {
+func mkTempDir(testDataDir string) error {
 	if cleanDir != "" {
 		return nil
 	}
 
-	// Try to remove past go-golden temp dirs.
-	matches, err := filepath.Glob(filepath.Join(os.TempDir(), "go-golden-*"))
-	if err != nil {
+	// The tmp dir will be `testdata/foo.autogold.tmp` or `testdata.autogold.tmp` (depending on testdata
+	// folder name.)
+	tmpDir := testDataDir + ".autogold.tmp"
+
+	// The dir may have been left behind if a past test run exited early, so remove it.
+	if err := os.RemoveAll(tmpDir); err != nil && !os.IsNotExist(err) {
 		return err
-	}
-	for _, match := range matches {
-		if err := os.RemoveAll(match); err != nil {
-			return err
-		}
 	}
 
-	// Create a temp dir for this run.
-	cleanDir, err = ioutil.TempDir("", "go-golden-*")
-	if err != nil {
+	// Create the tmp dir.
+	if err := os.Mkdir(tmpDir, os.ModePerm); err != nil {
 		return err
 	}
+	cleanDir = tmpDir
 	return nil
 }
 
