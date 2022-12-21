@@ -153,6 +153,7 @@ Additionally, CLI flag behavior has been improved substantially based on experie
 * Previously autogold would fail tests when running `-update`, meaning you may need to run `go test -update` many times to get to your desired end-state if updating a lot of test cases. Now we match the behavior of OCaml expect tests in not failing tests by default (you can now specify `-fail-on-update`)
 * `-fail-on-update` now uses `t.FailNow()` instead of `t.Fatal()` to allow as many tests as possible to succeed when performing an update operation.
 * `autogold.Want` has been deprecated in favor of `autogold.Expect`
+* Fixed `invalid cross-device link` errors on some systems.
 
 Finally, please note the renaming of functions before and after:
 
