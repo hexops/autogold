@@ -1,6 +1,7 @@
 package autogold
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -176,20 +177,11 @@ func Expect(want interface{}) Value {
 				// Replace the autogold.Expect(...) call's `want` parameter with the expression for
 				// the value we got.
 				start = time.Now()
-				newTestFile, err := replaceExpect(testPath, testName, line, gotString)
+				_, err = replaceExpect(testPath, testName, line, gotString, true)
 				profReplaceExpect = time.Since(start)
 				if err != nil {
 					writeProfile()
 					t.Fatal(fmt.Errorf("autogold: %v", err))
-				}
-				info, err := os.Stat(testPath)
-				if err != nil {
-					writeProfile()
-					t.Fatal(err)
-				}
-				if err := ioutil.WriteFile(testPath, []byte(newTestFile), info.Mode()); err != nil {
-					writeProfile()
-					t.Fatal(err)
 				}
 			}
 			if *failOnUpdate || !*update {
@@ -200,6 +192,50 @@ func Expect(want interface{}) Value {
 		},
 	}
 }
+
+type fileChanges struct {
+	before []byte
+	now    []byte
+}
+
+func (f *fileChanges) remap(oldLineNumber int) int {
+	if f.now == nil {
+		return oldLineNumber
+	}
+	// autogold.Expect call ordering is guaranteed to not have changed, so we leverage this to remap
+	// lines.
+	oldCallNumber := 0
+	foundLine := false
+	for n, line := range bytes.Split(f.before, []byte("\n")) {
+		if bytes.Contains(line, []byte("autogold.Expect(")) {
+			oldCallNumber++
+			if n == oldLineNumber-1 {
+				foundLine = true
+				break
+			}
+		}
+	}
+	if !foundLine {
+		return oldLineNumber
+	}
+
+	callNumber := 0
+	for n, line := range bytes.Split(f.now, []byte("\n")) {
+		if bytes.Contains(line, []byte("autogold.Expect(")) {
+			callNumber++
+			if callNumber == oldCallNumber {
+				return n + 1
+			}
+		}
+	}
+	panic("autogold: failed to find new call number; this is a bug please file an issue with a reproducable test case")
+}
+
+func (f *fileChanges) update(contents []byte) {
+	f.now = contents
+}
+
+var changesByFile = map[string]*fileChanges{}
 
 // replaceExpect replaces the invocation of:
 //
@@ -214,11 +250,23 @@ func Expect(want interface{}) Value {
 //
 // The returned updated file contents have the specified replacement, with goimports ran over the
 // result.
-func replaceExpect(testFilePath, testName string, line int, replacement string) ([]byte, error) {
+func replaceExpect(testFilePath, testName string, line int, replacement string, writeFile bool) ([]byte, error) {
+	unlock, err := acquirePathLock(testFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
+
 	testFileSrc, err := ioutil.ReadFile(testFilePath)
 	if err != nil {
 		return nil, err
 	}
+	changes, ok := changesByFile[testFilePath]
+	if !ok {
+		changes = &fileChanges{before: testFileSrc}
+		changesByFile[testFilePath] = changes
+	}
+
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, testFilePath, testFileSrc, parser.ParseComments)
 	if err != nil {
@@ -235,7 +283,7 @@ func replaceExpect(testFilePath, testName string, line int, replacement string) 
 	// see https://github.com/hexops/valast/pull/4. As for "why gofmt(goimports) and not gofumpt
 	// on the final file?", simply because gofmt is a superset of gofumpt and we don't want to make
 	// the call of using gofumpt on behalf of the user.
-	callExpr, err := findExpectCallExpr(fset, f, testName, line)
+	callExpr, err := findExpectCallExpr(fset, f, testName, changes.remap(line))
 	if err != nil {
 		return nil, err
 	}
@@ -261,6 +309,18 @@ func replaceExpect(testFilePath, testName string, line int, replacement string) 
 			fmt.Println("-------------")
 		}
 		return nil, fmt.Errorf("formatting file: %v", err)
+	}
+
+	changes.update(newFile)
+
+	if writeFile {
+		info, err := os.Stat(testFilePath)
+		if err != nil {
+			return nil, err
+		}
+		if err := ioutil.WriteFile(testFilePath, []byte(newFile), info.Mode()); err != nil {
+			return nil, err
+		}
 	}
 	return newFile, nil
 }

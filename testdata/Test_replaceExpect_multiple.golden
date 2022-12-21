@@ -1,0 +1,41 @@
+package time
+
+import (
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/hexops/autogold"
+)
+
+func TestTime(t *testing.T) {
+	testCases := []struct {
+		gmt    string
+		loc    string
+		expect autogold.Value
+	}{
+		{"12:31", "Europe/Zuri", autogold.Expect(&struct {
+			A bool
+			C error
+		}{A: true, C: errors.New("Europe/Zuri")})},
+		{"12:31", "America/New_York", autogold.Expect(&struct {
+			A bool
+			C error
+		}{A: true, C: errors.New("America/New_York")})},
+		{"08:08", "Australia/Sydney", autogold.Expect(&struct {
+			A bool
+			C error
+		}{A: true, C: errors.New("Australia/Sydney")})},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.loc, func(t *testing.T) {
+			loc, err := time.LoadLocation(tc.loc)
+			if err != nil {
+				t.Fatal("could not load location")
+			}
+			gmt, _ := time.Parse("15:04", tc.gmt)
+			got := gmt.In(loc).Format("15:04")
+			tc.expect.Equal(t, got)
+		})
+	}
+}
