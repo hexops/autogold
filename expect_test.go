@@ -2,6 +2,7 @@ package autogold
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -79,8 +80,11 @@ C error
 	}
 	for _, tst := range tests {
 		t.Run(tst.file+"_"+fmt.Sprint(tst.line), func(t *testing.T) {
+			// Reset our multi-test change mapping.
+			changesByFile = map[string]*fileChanges{}
+
 			testFilePath := filepath.Join("testdata/replace_expect", tst.file)
-			got, err := replaceExpect(testFilePath, tst.testName, tst.line, tst.replacement)
+			got, err := replaceExpect(testFilePath, tst.testName, tst.line, tst.replacement, false)
 			if tst.err != "" && tst.err != fmt.Sprint(err) || tst.err == "" && err != nil {
 				t.Fatal("\ngot:\n", err, "\nwant:\n", tst.err)
 			}
@@ -89,6 +93,90 @@ C error
 	}
 }
 
+// Tests that multiple replaceExpect invocations match line numbers correctly. This is important
+// when multiple values are updated in the same file as line numbers will shift as we replace
+// contents.
+func Test_replaceExpect_multiple(t *testing.T) {
+	replacements := []struct {
+		testName    string
+		line        int
+		replacement string
+		err         string
+	}{
+		{
+			testName:    "TestTime",
+			line:        17,
+			replacement: `"America/New_York"`,
+		},
+		{
+			testName: "TestTime",
+			line:     16,
+			replacement: `&struct{
+				A bool
+				C error
+				}{A: true, C: errors.New("Europe/Zuri")}`,
+		},
+		{
+			testName:    "TestTime",
+			line:        18,
+			replacement: `"Australia/Sydney"`,
+		},
+		{
+			testName:    "TestTime",
+			line:        16,
+			replacement: `"Europe/Zuri"`,
+		},
+		{
+			testName: "TestTime",
+			line:     17,
+			replacement: `&struct{
+				A bool
+				C error
+				}{A: true, C: errors.New("America/New_York")}`,
+		},
+		{
+			testName: "TestTime",
+			line:     16,
+			replacement: `&struct{
+				A bool
+				C error
+				}{A: true, C: errors.New("Europe/Zuri")}`,
+		},
+		{
+			testName: "TestTime",
+			line:     18,
+			replacement: `&struct{
+				A bool
+				C error
+				}{A: true, C: errors.New("Australia/Sydney")}`,
+		},
+	}
+
+	fileContents, err := os.ReadFile("testdata/replace_expect/complex")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpFile := filepath.Join(t.TempDir(), "complex.go")
+	err = os.WriteFile(tmpFile, fileContents, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, r := range replacements {
+		r := r
+		_, err := replaceExpect(tmpFile, r.testName, r.line, r.replacement, true)
+		if err != nil {
+			t.Log("\ngot:\n", err, "\nwant:\n", err)
+			t.Fail()
+		}
+	}
+
+	got, err := os.ReadFile(tmpFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ExpectFile(t, Raw(got))
+}
 func Test_getPackageNameAndPath(t *testing.T) {
 	pkgName, pkgPath, err := getPackageNameAndPath(".")
 	if err != nil {
