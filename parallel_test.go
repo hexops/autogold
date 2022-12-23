@@ -3,7 +3,7 @@ package autogold_test
 import (
 	"testing"
 
-	"github.com/hexops/autogold"
+	"github.com/hexops/autogold/v2"
 )
 
 func TestWant_parallel1(t *testing.T) {

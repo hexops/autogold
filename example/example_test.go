@@ -3,7 +3,7 @@ package example
 import (
 	"testing"
 
-	"github.com/hexops/autogold"
+	"github.com/hexops/autogold/v2"
 )
 
 func TestExpectFile(t *testing.T) {

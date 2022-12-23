@@ -21,7 +21,7 @@ go get -u github.com/hexops/autogold/v2
 Write in a Go test:
 
 ```Go
-import "github.com/hexops/autogold"
+import "github.com/hexops/autogold/v2"
 ...
 autogold.ExpectFile(t, got)
 ```

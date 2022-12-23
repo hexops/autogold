@@ -185,7 +185,7 @@ func Test_getPackageNameAndPath(t *testing.T) {
 	if want := "autogold"; pkgName != want {
 		t.Fatal("\ngot:\n", pkgName, "\nwant:\n", want)
 	}
-	if want := "github.com/hexops/autogold"; pkgPath != want {
+	if want := "github.com/hexops/autogold/v2"; pkgPath != want {
 		t.Fatal("\ngot:\n", pkgPath, "\nwant:\n", want)
 	}
 }
@@ -198,7 +198,7 @@ func Test_getPackageNameAndPath_subdir(t *testing.T) {
 	if want := "test"; pkgName != want {
 		t.Fatal("\ngot:\n", pkgName, "\nwant:\n", want)
 	}
-	if want := "github.com/hexops/autogold/internal/test"; pkgPath != want {
+	if want := "github.com/hexops/autogold/v2/internal/test"; pkgPath != want {
 		t.Fatal("\ngot:\n", pkgPath, "\nwant:\n", want)
 	}
 }
