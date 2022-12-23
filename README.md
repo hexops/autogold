@@ -10,6 +10,12 @@ autogold makes `go test -update` automatically update your Go tests (golden file
 
 [_"It's 2021: you shouldn't have to update Go tests manually"_](https://youtu.be/mvkIruEGRr4)
 
+## Installation
+
+```sh
+go get -u github.com/hexops/autogold/v2
+```
+
 ## Automatic golden files
 
 Write in a Go test:

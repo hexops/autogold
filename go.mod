@@ -1,4 +1,4 @@
-module github.com/hexops/autogold
+module github.com/hexops/mach/v2
 
 go 1.15
 
