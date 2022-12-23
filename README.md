@@ -13,7 +13,7 @@ autogold makes `go test -update` automatically update your Go tests (golden file
 ## Installation
 
 ```sh
-go get -u github.com/hexops/autogold/v2@v2.0.2
+go get -u github.com/hexops/autogold/v2
 ```
 
 ## Automatic golden files
