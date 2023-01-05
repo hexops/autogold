@@ -162,17 +162,11 @@ func Expect(want interface{}) Value {
 				// Acquire a file-level lock to prevent concurrent mutations to the _test.go file
 				// by parallel tests (whether in-process, or not.)
 				start = time.Now()
-				unlock, err := acquirePathLock(testPath)
 				profAcquirePathLock = time.Since(start)
 				if err != nil {
 					writeProfile()
 					t.Fatal(err)
 				}
-				defer func() {
-					if err := unlock(); err != nil {
-						t.Fatal(err)
-					}
-				}()
 
 				// Replace the autogold.Expect(...) call's `want` parameter with the expression for
 				// the value we got.
