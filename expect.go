@@ -43,6 +43,9 @@ var (
 )
 
 func getPackageNameAndPath(dir string) (name, path string, err error) {
+	if isBazel() {
+		return bazelGetPackageNameAndPath(dir)
+	}
 	// If it is cached, fetch it from the cache. This prevents us from doing a semi-costly package
 	// load for every test that runs, instead requiring we only do it once per _test.go directory.
 	getPackageNameAndPathCacheMu.RLock()
@@ -122,16 +125,11 @@ func Expect(want interface{}) Value {
 				writeProfile()
 				t.Fatal(err)
 			}
-			testPath, err := filepath.Rel(pwd, file)
-			if err != nil {
-				writeProfile()
-				t.Fatal(err)
-			}
 
 			// Determine the package name and path of the test file, so we can unqualify types in
 			// that package.
 			start := time.Now()
-			pkgName, pkgPath, err := getPackageNameAndPath(filepath.Dir(testPath))
+			pkgName, pkgPath, err := getPackageNameAndPath(pwd)
 			profGetPackageNameAndPath = time.Since(start)
 			if err != nil {
 				writeProfile()
@@ -171,6 +169,11 @@ func Expect(want interface{}) Value {
 				// Replace the autogold.Expect(...) call's `want` parameter with the expression for
 				// the value we got.
 				start = time.Now()
+				testPath, err := filepath.Rel(pwd, file)
+				if err != nil {
+					writeProfile()
+					t.Fatal(err)
+				}
 				_, err = replaceExpect(t, testPath, testName, line, gotString, true)
 				profReplaceExpect = time.Since(start)
 				if err != nil {
