@@ -63,10 +63,13 @@ func bazelGetPackageNameAndPath(dir string) (name, path string, err error) {
 		ok   bool
 		pc   uintptr
 	)
-	for caller := 1; ; caller++ {
+	for caller := 1; caller < 10000; caller++ {
 		pc, file, _, ok = runtime.Caller(caller)
-		if !ok || strings.Contains(file, "_test.go") {
+		if !ok {
 			break
+		}
+		if !strings.Contains(file, "_test.go") {
+			continue
 		}
 		pkgPath := guessPkgPathFromFuncName(runtime.FuncForPC(pc).Name())
 		pkgName, _ := bazelPackagePathToName(pkgPath)
@@ -79,12 +82,21 @@ func bazelGetPackageNameAndPath(dir string) (name, path string, err error) {
 //
 // github.com/hexops/autogold/v2 -> autogold
 // github.com/hexops/autogold -> autogold
+// cmd/blobstore/internal/blobstore/blobstore_test_test -> blobstore_test
+//
+// Note that in the third case, Bazel appears to do some reckless renaming of Go package paths,
+// where that package would otherwise have path "github.com/sourcegraph/sourcegraph/cmd/blobstore/internal/blobstore"
+// and "package blobstore_test" as its name.
 //
 // This does not respect packages whose import path does not match their defined `package autogold_test`
 // statement.
 func bazelPackagePathToName(path string) (string, error) {
 	components := strings.Split(path, "/")
 	last := components[len(components)-1]
+	if !strings.Contains(path, ".") {
+		// Third case.
+		return strings.TrimSuffix(last, "_test"), nil
+	}
 	if strings.HasPrefix(last, "v") {
 		if _, err := strconv.ParseUint(last[1:], 10, 32); err == nil {
 			// Package path has a version suffix, e.g. github.com/hexops/autogold/v2
