@@ -170,6 +170,37 @@ Finally, please note the renaming of functions before and after:
 * Inline tests: `autogold.Want` -> `autogold.Expect`
 * File tests: `autogold.Equal` -> `autogold.ExpectFile`
 
+##### Automating the migration with Comby
+
+The API changes from v1 to v2 are small and the following [Comby](https://comby.dev) configuration file can be used to migrate your codebase automatically: 
+
+```
+# autogold.comby.toml
+[update-imports]
+
+match="\"github.com/hexops/autogold\""
+rewrite="\"github.com/hexops/autogold/v2\""
+
+[update-api-want]
+
+match="autogold.Want(:[desc], :[v])"
+rewrite="autogold.Expect(:[v])"
+
+[update-api-equal]
+
+match="autogold.Equal(:[v])"
+rewrite="autogold.ExpectFile(:[v])"
+```
+
+Assuming Comby is available on your system, you can run the following command to apply the changes: 
+
+```
+$ go get -u github.com/hexops/autogold/v2
+$ comby -config autogold.comby.toml -matcher .go -exclude-dir vendor,node_modules -in-place
+$ go mod tidy
+$ git diff # show the changes applied by comby
+```
+
 #### v1.3.1
 
 * Improved Go code formatting (updated valast and gofumpt versions)
