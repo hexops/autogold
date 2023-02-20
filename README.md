@@ -172,7 +172,10 @@ Finally, please note the renaming of functions before and after:
 
 ##### Automating the migration with Comby
 
-The API changes from v1 to v2 are small and the following [Comby](https://comby.dev) configuration file can be used to migrate your codebase automatically: 
+You can automatically migrate from v1 to v2 using the following [Comby](https://comby.dev) configuration:
+
+<details>
+<summary>autogold.comby.toml</summary>
 
 ```
 # autogold.comby.toml
@@ -200,6 +203,8 @@ $ comby -config autogold.comby.toml -matcher .go -exclude-dir vendor,node_module
 $ go mod tidy
 $ git diff # show the changes applied by comby
 ```
+
+</details>
 
 #### v1.3.1
 
