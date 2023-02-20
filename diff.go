@@ -33,6 +33,9 @@ func stringify(v interface{}, opts []Option) string {
 		if opt.forPackagePath != "" {
 			valastOpt.PackagePath = opt.forPackagePath
 		}
+		if isBazel() {
+			valastOpt.PackagePathToName = bazelPackagePathToName
+		}
 		if opt.allowRaw {
 			allowRaw = true
 		}

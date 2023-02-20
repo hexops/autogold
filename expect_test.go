@@ -195,7 +195,11 @@ func Test_getPackageNameAndPath_subdir(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := "test"; pkgName != want {
+	want := "test"
+	if isBazel() {
+		want = "autogold"
+	}
+	if pkgName != want {
 		t.Fatal("\ngot:\n", pkgName, "\nwant:\n", want)
 	}
 	if want := "github.com/hexops/autogold/v2/internal/test"; pkgPath != want {
