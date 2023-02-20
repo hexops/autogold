@@ -20,14 +20,14 @@ import (
 // used with Bazel without removing "." from your PATH, which Bazel claims breaks hermeticity (one
 // of the whole reasons people use Bazel.)
 //
-// For Bazel users, we allow them to set ENABLE_BAZEL_HACKS=true which causes autogold to guess/infer
-// package names and paths using stack trace information and import paths. This is not perfect, it
-// doesn't respect packages whose import paths donot match their defined `package foo` statement for
-// example - but it's sufficient to enable autogold to be used in Bazel build environments where the
-// above Go/Bazel bug is found.
+// For Bazel users, we allow them to set ENABLE_BAZEL_PACKAGES_LOAD_HACK=true which causes autogold
+// to guess/infer package names and paths using stack trace information and import paths. This is
+// not perfect, it doesn't respect packages whose import paths donot match their defined
+// `package foo` statement for example - but it's sufficient to enable autogold to be used in Bazel
+// build environments where the above Go/Bazel bug is found.
 
 func isBazel() bool {
-	hacks, _ := strconv.ParseBool(os.Getenv("ENABLE_BAZEL_HACKS"))
+	hacks, _ := strconv.ParseBool(os.Getenv("ENABLE_BAZEL_PACKAGES_LOAD_HACK"))
 	return hacks
 }
 
