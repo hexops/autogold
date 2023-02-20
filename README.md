@@ -133,6 +133,10 @@ The following are alternatives to autogold, making note of the differences we fo
 
 ## Changelog
 
+#### v2.1.0
+
+Added support for building in Bazel / working around a bug in Bazel / Go's `packages.Load` functionality. This feature can be enabled using `ENABLE_BAZEL_PACKAGES_LOAD_HACK=true`. For more details see [#40](https://github.com/hexops/autogold/pull/40) and [golang/go#57304](https://github.com/golang/go/issues/57304)
+
 #### v2.0.3
 
 Fixed an issue where updating inline tests could cause a deadlock.
