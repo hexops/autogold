@@ -16,7 +16,6 @@ import (
 )
 
 var (
-	// update is defined below, in init()
 	clean        = flag.Bool("clean", false, "remove unused .golden files (slightly slower)")
 	failOnUpdate = flag.Bool("fail-on-update", false, "If a .golden file is updated, fail the test")
 
