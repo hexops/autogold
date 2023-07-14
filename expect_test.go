@@ -178,7 +178,7 @@ func Test_replaceExpect_multiple(t *testing.T) {
 	ExpectFile(t, Raw(got))
 }
 func Test_getPackageNameAndPath(t *testing.T) {
-	pkgName, pkgPath, err := getPackageNameAndPath(".")
+	pkgName, pkgPath, err := getPackageNameAndPath(".", "expect_test.go")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +191,7 @@ func Test_getPackageNameAndPath(t *testing.T) {
 }
 
 func Test_getPackageNameAndPath_subdir(t *testing.T) {
-	pkgName, pkgPath, err := getPackageNameAndPath("./internal/test")
+	pkgName, pkgPath, err := getPackageNameAndPath("./internal/test", "test.go")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,6 +203,23 @@ func Test_getPackageNameAndPath_subdir(t *testing.T) {
 		t.Fatal("\ngot:\n", pkgName, "\nwant:\n", want)
 	}
 	if want := "github.com/hexops/autogold/v2/internal/test"; pkgPath != want {
+		t.Fatal("\ngot:\n", pkgPath, "\nwant:\n", want)
+	}
+}
+
+func Test_getPackageNameAndPath_subdir_blackbox(t *testing.T) {
+	pkgName, pkgPath, err := getPackageNameAndPath("./internal/test", "blackbox_test.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "test_test"
+	if isBazel() {
+		want = "autogold"
+	}
+	if pkgName != want {
+		t.Fatal("\ngot:\n", pkgName, "\nwant:\n", want)
+	}
+	if want := "github.com/hexops/autogold/v2/internal/test_test"; pkgPath != want {
 		t.Fatal("\ngot:\n", pkgPath, "\nwant:\n", want)
 	}
 }
@@ -240,12 +257,12 @@ func testEqualSubtestSameNames(t *testing.T) {
 func Benchmark_getPackageNameAndPath_cached(b *testing.B) {
 	// Wipe the cache, as it was populated by other tests.
 	getPackageNameAndPathCacheMu.Lock()
-	getPackageNameAndPathCache = map[string][2]string{}
+	getPackageNameAndPathCache = map[[2]string][2]string{}
 	getPackageNameAndPathCacheMu.Unlock()
 
 	start := time.Now()
 	for n := 0; n < b.N; n++ {
-		_, _, err := getPackageNameAndPath("./autogold/internal/test")
+		_, _, err := getPackageNameAndPath("./autogold/internal/test", "test.go")
 		if err != nil {
 			b.Fatal(err)
 		}
