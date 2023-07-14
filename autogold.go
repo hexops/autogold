@@ -16,7 +16,6 @@ import (
 )
 
 var (
-	update       = flag.Bool("update", false, "update .golden files, leaving unused)")
 	clean        = flag.Bool("clean", false, "remove unused .golden files (slightly slower)")
 	failOnUpdate = flag.Bool("fail-on-update", false, "If a .golden file is updated, fail the test")
 
@@ -26,7 +25,17 @@ var (
 )
 
 func init() {
+	// For compatibility with other packages that also define an -update parameter, only define the
+	// flag if it's not already defined.
+	if updateFlag := flag.Lookup("update"); updateFlag == nil {
+		flag.Bool("update", false, "update .golden files, leaving unused)")
+	}
+
 	color.NoColor = false
+}
+
+func update() bool {
+	return flag.Lookup("update").Value.(flag.Getter).Get().(bool)
 }
 
 // ExpectFile checks if got is equal to the saved `testdata/<test name>.golden` test file. If it is
@@ -131,7 +140,7 @@ func ExpectFile(t *testing.T, got interface{}, opts ...Option) {
 		os.Remove(outFile)
 	}
 	if diff != "" {
-		if *update {
+		if update() {
 			grabLock()
 			if _, err := os.Stat(dir); os.IsNotExist(err) {
 				if err := os.MkdirAll(dir, 0o700); err != nil {
@@ -142,7 +151,7 @@ func ExpectFile(t *testing.T, got interface{}, opts ...Option) {
 				t.Fatal(err)
 			}
 		}
-		if *failOnUpdate || !*update {
+		if *failOnUpdate || !update() {
 			t.Log(fmt.Errorf("mismatch (-want +got):\n%s", colorDiff(diff)))
 			t.FailNow()
 		}
