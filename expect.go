@@ -156,7 +156,7 @@ func Expect(want interface{}) Value {
 			}
 
 			// Update the test file if so desired.
-			if *update {
+			if update() {
 				// Acquire a file-level lock to prevent concurrent mutations to the _test.go file
 				// by parallel tests (whether in-process, or not.)
 				start = time.Now()
@@ -181,7 +181,7 @@ func Expect(want interface{}) Value {
 					t.Fatal(fmt.Errorf("autogold: %v", err))
 				}
 			}
-			if *failOnUpdate || !*update {
+			if *failOnUpdate || !update() {
 				writeProfile()
 				t.Log(fmt.Errorf("mismatch (-want +got):\n%s", colorDiff(diff)))
 				t.FailNow()
