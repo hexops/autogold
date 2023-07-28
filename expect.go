@@ -39,30 +39,48 @@ func (v value) Equal(t *testing.T, got interface{}, opts ...Option) {
 
 var (
 	getPackageNameAndPathCacheMu sync.RWMutex
-	getPackageNameAndPathCache   = map[string][2]string{}
+	getPackageNameAndPathCache   = map[[2]string][2]string{}
 )
 
-func getPackageNameAndPath(dir string) (name, path string, err error) {
+func getPackageNameAndPath(dir, file string) (name, path string, err error) {
 	if isBazel() {
 		return bazelGetPackageNameAndPath(dir)
 	}
 	// If it is cached, fetch it from the cache. This prevents us from doing a semi-costly package
 	// load for every test that runs, instead requiring we only do it once per _test.go directory.
 	getPackageNameAndPathCacheMu.RLock()
-	if v, cached := getPackageNameAndPathCache[dir]; cached {
+	if v, cached := getPackageNameAndPathCache[[2]string{dir, file}]; cached {
 		getPackageNameAndPathCacheMu.RUnlock()
 		return v[0], v[1], nil
 	}
 	getPackageNameAndPathCacheMu.RUnlock()
 
-	pkgs, err := packages.Load(&packages.Config{Mode: packages.NeedName}, dir)
+	pkgs, err := packages.Load(&packages.Config{Mode: packages.NeedName | packages.NeedFiles, Tests: true}, dir)
 	if err != nil {
 		return "", "", err
+
 	}
+
+	var testPkg *packages.Package
+
+find:
+	for _, pkg := range pkgs {
+		for _, goFile := range pkg.GoFiles {
+			if filepath.Base(goFile) == filepath.Base(file) {
+				testPkg = pkg
+				break find
+			}
+		}
+	}
+
+	if testPkg == nil {
+		panic(fmt.Errorf("could not find test package for %s in %s", file, dir))
+	}
+
 	getPackageNameAndPathCacheMu.Lock()
-	getPackageNameAndPathCache[dir] = [2]string{pkgs[0].Name, pkgs[0].PkgPath}
+	getPackageNameAndPathCache[[2]string{dir, file}] = [2]string{testPkg.Name, testPkg.PkgPath}
 	getPackageNameAndPathCacheMu.Unlock()
-	return pkgs[0].Name, pkgs[0].PkgPath, nil
+	return testPkg.Name, testPkg.PkgPath, nil
 }
 
 // Expect returns an expected Value which can later be checked for equality against a value a test
@@ -129,7 +147,7 @@ func Expect(want interface{}) Value {
 			// Determine the package name and path of the test file, so we can unqualify types in
 			// that package.
 			start := time.Now()
-			pkgName, pkgPath, err := getPackageNameAndPath(pwd)
+			pkgName, pkgPath, err := getPackageNameAndPath(pwd, file)
 			profGetPackageNameAndPath = time.Since(start)
 			if err != nil {
 				writeProfile()
