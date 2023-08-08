@@ -133,6 +133,13 @@ The following are alternatives to autogold, making note of the differences we fo
 
 ## Changelog
 
+#### v2.2.1
+
+Updated to valast v1.4.4:
+
+* `valast.Addr` is replaced by `valast.Ptr`, which uses Go generics and looks cleaner.
+* `time.Time` values are now supported.
+
 #### v2.2.0
 
 * If autogold is used in packages with an `-update` flag already defined, now no conflict occurs. This enables autogold to be used with other 'golden' packages without conflict.
