@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // Bazel build systems try to keep hermeticity by setting PATH="." - but Go does not like this as
@@ -25,11 +26,36 @@ import (
 // not perfect, it doesn't respect packages whose import paths donot match their defined
 // `package foo` statement for example - but it's sufficient to enable autogold to be used in Bazel
 // build environments where the above Go/Bazel bug is found.
+//
+// Additionally, we support using a global custom resolver. It is useful to handle packages whose
+// import paths donot match their defined. You may hardcode the mapping for packages that are
+// known to be problematic.
+// Learn more from RegisterBazelPackageNameAndPathResolver.
 
 func isBazel() bool {
 	hacks, _ := strconv.ParseBool(os.Getenv("ENABLE_BAZEL_PACKAGES_LOAD_HACK"))
 	return hacks
 }
+
+var (
+	registerResolverOnce sync.Once
+	resolver             BazelPackagePathToNameResolverFunc
+)
+
+// RegisterBazelPackagePathToNameResolver registers a global custom resolver
+// from package path to name.
+// Returns empty to fallback to the existing generic handling
+// You should call this method as early as possible during in `init()`
+//
+// We only support using a global resolver because this is a hack and it is much easier
+// to track the usage when things are centralized.
+func RegisterBazelPackagePathToNameResolver(f BazelPackagePathToNameResolverFunc) {
+	registerResolverOnce.Do(func() {
+		resolver = f
+	})
+}
+
+type BazelPackagePathToNameResolverFunc = func(path string) (name string)
 
 // Guesses a package name and import path using Go debug stack trace information.
 //
@@ -91,6 +117,14 @@ func bazelGetPackageNameAndPath(dir string) (name, path string, err error) {
 // This does not respect packages whose import path does not match their defined `package autogold_test`
 // statement.
 func bazelPackagePathToName(path string) (string, error) {
+	// try our best with custom resolver
+	// if empty, fallback to the best-guess implementation
+	if resolver != nil {
+		if n := resolver(path); n != "" {
+			return n, nil
+		}
+	}
+
 	components := strings.Split(path, "/")
 	last := components[len(components)-1]
 	if !strings.Contains(path, ".") {
