@@ -8,6 +8,6 @@ require (
 	github.com/hexops/valast v1.4.4
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/nightlyone/lockfile v1.0.0
-	golang.org/x/tools v0.12.0
+	golang.org/x/tools v0.21.0
 	mvdan.cc/gofumpt v0.5.0 // indirect
 )
