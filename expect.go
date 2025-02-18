@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -97,6 +98,7 @@ func Expect(want interface{}) Value {
 			t.Helper()
 			var (
 				profGetPackageNameAndPath time.Duration
+				profEqual                 time.Duration
 				profStringifyExpect       time.Duration
 				profStringifyGot          time.Duration
 				profDiff                  time.Duration
@@ -110,11 +112,24 @@ func Expect(want interface{}) Value {
 				}
 				fmt.Println("autogold: profile:")
 				fmt.Println("  getPackageNameAndPath:", profGetPackageNameAndPath)
+				fmt.Println("  equal:                ", profEqual)
 				fmt.Println("  stringify (want):     ", profStringifyExpect)
 				fmt.Println("  stringify (got):      ", profStringifyGot)
 				fmt.Println("  diffing   (got):      ", profDiff)
 				fmt.Println("  acquire path lock:    ", profAcquirePathLock)
 				fmt.Println("  rewrite autogold.Expect:", profReplaceExpect)
+			}
+
+			// Fast-path: check if the test passed via reflect.DeepEqual to avoid
+			// slower stringify. This relies on reflect.DeepEqual => stringify
+			// equal. Note that stringify equal =/=> reflect.DeepEqual but that is
+			// fine since we only return early if equal.
+			start := time.Now()
+			equal := reflect.DeepEqual(want, got)
+			profEqual = time.Since(start)
+			if equal {
+				writeProfile()
+				return // test passed
 			}
 
 			// Identify the root test name ("TestFoo" in "TestFoo/bar")
@@ -146,7 +161,7 @@ func Expect(want interface{}) Value {
 
 			// Determine the package name and path of the test file, so we can unqualify types in
 			// that package.
-			start := time.Now()
+			start = time.Now()
 			pkgName, pkgPath, err := getPackageNameAndPath(pwd, file)
 			profGetPackageNameAndPath = time.Since(start)
 			if err != nil {
