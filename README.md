@@ -6,10 +6,6 @@
 
 autogold makes `go test -update` automatically update your Go tests (golden files and Go values in e.g. `foo_test.go`).
 
-~5m introduction available on YouTube:
-
-[_"It's 2021: you shouldn't have to update Go tests manually"_](https://youtu.be/mvkIruEGRr4)
-
 ## Installation
 
 ```sh
@@ -132,6 +128,14 @@ The following are alternatives to autogold, making note of the differences we fo
     - Does not support inline snapshots / code updating.
 
 ## Changelog
+
+#### v2.3.0
+
+Updated to valast v1.5.0:
+
+* Updated to valast v1.5.0: now supports [registration of custom types -> AST conversions.](https://github.com/hexops/valast/commit/41f59f9d46befd6bfbb2e9e8be90d10fe2937b57)
+* Optimization making [test comparisons run faster.](https://github.com/hexops/autogold/commit/f1b7fcb6600b3022d27bcbb646fe050e92bce588)
+
 
 #### v2.2.1
 
